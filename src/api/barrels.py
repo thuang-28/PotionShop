@@ -51,7 +51,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         result = connection.execute(
             sqlalchemy.text("SELECT num_green_potions FROM global_inventory")
         )
-        available_potions = result.fetchone()[0]
+        available_potions = result[0].num_green_potions
     if available_potions < 10:
         return [
             {
