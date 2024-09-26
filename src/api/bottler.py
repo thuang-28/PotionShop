@@ -48,7 +48,7 @@ def get_bottle_plan():
         result = connection.execute(
             sqlalchemy.text("SELECT num_green_ml FROM global_inventory")
         )
-        available_ml = result[0].num_green_ml
+        available_ml = result.first().num_green_ml
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \

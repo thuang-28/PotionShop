@@ -19,10 +19,11 @@ def get_inventory():
         result = connection.execute(
             sqlalchemy.text("SELECT * FROM global_inventory WHERE id=1")
         )
+        row = result.first()
     return {
-        "number_of_potions": result[0].num_green_potions,
-        "ml_in_barrels": result[0].num_green_ml,
-        "gold": result[0].gold,
+        "number_of_potions": row.num_green_potions,
+        "ml_in_barrels": row.num_green_ml,
+        "gold": row.gold,
     }
 
 
