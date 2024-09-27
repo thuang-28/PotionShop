@@ -25,7 +25,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
-                    SET num_potions = num_potions + {total_bottles}"
+                    SET num_potions = num_potions + {total_bottles},
+                    SET num_green_ml = num_green_ml % 100"
             )
         )
     print(f"potions delivered: {potions_delivered} order_id: {order_id}")
@@ -49,12 +50,6 @@ def get_bottle_plan():
             sqlalchemy.text("SELECT num_green_ml FROM global_inventory")
         )
         available_ml = result.first().num_green_ml
-        connection.execute(
-            sqlalchemy.text(
-                f"UPDATE global_inventory \
-                SET num_green_ml = {available_ml % 100}"
-            )
-        )
     num_mixable_potions = int(available_ml / 100)
     return [
         {
