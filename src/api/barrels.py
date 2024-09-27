@@ -35,7 +35,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             sqlalchemy.text(
                 f"UPDATE global_inventory \
                     SET num_green_ml = num_green_ml + {total_num_ml}, \
-                        gold = gold - {total_price}"
+                    gold = gold - {total_price}"
             )
         )
     print(f"barrels delivered: {barrels_delivered} order_id: {order_id}")

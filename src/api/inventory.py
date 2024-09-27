@@ -17,7 +17,7 @@ def get_inventory():
     """ """
     with db.engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT * FROM global_inventory WHERE id=1")
+            sqlalchemy.text("SELECT num_green_potions, num_green_ml, gold FROM global_inventory")
         )
         row = result.first()
     return {
