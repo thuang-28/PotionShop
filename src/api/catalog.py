@@ -14,7 +14,7 @@ def get_catalog():
         result = connection.execute(
             sqlalchemy.text("SELECT num_green_potions FROM global_inventory")
         )
-        available_stock = result.fetchone()[0]
+        available_stock = result.first().num_green_potions
 
     return [
         {
