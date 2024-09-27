@@ -25,7 +25,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
-                    SET num_potions = num_potions + {total_bottles},
+                    SET num_potions = num_potions + {total_bottles}, \
                     SET num_green_ml = num_green_ml % 100"
             )
         )
