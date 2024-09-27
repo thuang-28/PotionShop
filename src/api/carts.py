@@ -1,7 +1,9 @@
 from enum import Enum
 
+import sqlalchemy
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
+from src import database as db
 from src.api import auth
 
 router = APIRouter(
@@ -10,15 +12,21 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+# incredibly crude
+cart_dict = {}
+
+
 class search_sort_options(str, Enum):
     customer_name = "customer_name"
     item_sku = "item_sku"
     line_item_total = "line_item_total"
     timestamp = "timestamp"
 
+
 class search_sort_order(str, Enum):
     asc = "asc"
-    desc = "desc"   
+    desc = "desc"
+
 
 @router.get("/search/", tags=["search"])
 def search_orders(
@@ -31,7 +39,7 @@ def search_orders(
     """
     Search for cart line items by customer name and/or potion sku.
 
-    Customer name and potion sku filter to orders that contain the 
+    Customer name and potion sku filter to orders that contain the
     string (case insensitive). If the filters aren't provided, no
     filtering occurs on the respective search term.
 
@@ -47,7 +55,7 @@ def search_orders(
 
     The response itself contains a previous and next page token (if
     such pages exist) and the results as an array of line items. Each
-    line item contains the line item id (must be unique), item sku, 
+    line item contains the line item id (must be unique), item sku,
     customer name, line item total (in gold), and timestamp of the order.
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
@@ -73,6 +81,7 @@ class Customer(BaseModel):
     character_class: str
     level: int
 
+
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
     """
@@ -86,7 +95,9 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    return {"cart_id": 1}
+    cart_id = len(cart_dict) + 1
+    cart_dict[cart_id] = {"customer": new_cart, "items": {}}
+    return {"cart_id": cart_id}
 
 
 class CartItem(BaseModel):
@@ -96,15 +107,28 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-
+    cart_dict[cart_id]["items"][item_sku] = cart_item
     return "OK"
 
 
 class CartCheckout(BaseModel):
     payment: str
 
+
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+    total_bottles = sum(
+        cart_dict[cart_id]["items"][item].quantity
+        for item in cart_dict[cart_id]["items"]
+    )
+    total_price = total_bottles * 50
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                f"UPDATE global_inventory \
+                    SET num_green_potions = num_green_potions - {total_bottles}, \
+                    gold = gold + {total_price}"
+            )
+        )
+    return {"total_potions_bought": total_bottles, "total_gold_paid": total_price}
