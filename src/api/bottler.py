@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends
 from enum import Enum
-from pydantic import BaseModel
-from src.api import auth
+
 import sqlalchemy
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
 from src import database as db
+from src.api import auth
 
 router = APIRouter(
     prefix="/bottler",
@@ -21,12 +23,15 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
     total_bottles = sum([potion.quantity for potion in potions_delivered])
+    total_ml = sum(
+        [potion.potion_type[1] * potion.quantity for potion in potions_delivered]
+    )
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
                     SET num_green_potions = num_green_potions + {total_bottles}, \
-                    num_green_ml = num_green_ml % 100"
+                    num_green_ml = num_green_ml - {total_ml}"
             )
         )
     print(f"potions delivered: {potions_delivered} order_id: {order_id}")
@@ -51,12 +56,14 @@ def get_bottle_plan():
         )
         available_ml = result.first().num_green_ml
     num_mixable_potions = int(available_ml / 100)
-    return [
-        {
-            "potion_type": [0, 100, 0, 0],
-            "quantity": num_mixable_potions,
-        }
-    ]
+    if num_mixable_potions > 0:
+        return [
+            {
+                "potion_type": [0, 100, 0, 0],
+                "quantity": num_mixable_potions,
+            }
+        ]
+    return []
 
 
 if __name__ == "__main__":
