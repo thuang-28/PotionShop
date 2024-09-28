@@ -1,6 +1,7 @@
 import sqlalchemy
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
 from src import database as db
 from src.api import auth
 
@@ -46,17 +47,22 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
-    print(wholesale_catalog)
-    with db.engine.begin() as connection:
-        result = connection.execute(
-            sqlalchemy.text("SELECT num_green_potions FROM global_inventory")
-        )
-        available_potions = result.first().num_green_potions
-    if available_potions < 10:
-        return [
-            {
-                "sku": "SMALL_GREEN_BARREL",
-                "quantity": 1,
-            }
-        ]
+    green_barrel = next(
+        (barrel for barrel in wholesale_catalog if barrel.sku == "SMALL_GREEN_BARREL"),
+        None,
+    )
+    if green_barrel:
+        with db.engine.begin() as connection:
+            result = connection.execute(
+                sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")
+            )
+            available_potions = result.first().num_green_potions
+            gold = result.first().gold
+        if available_potions < 10 and gold >= green_barrel.price:
+            return [
+                {
+                    "sku": "SMALL_GREEN_BARREL",
+                    "quantity": 1,
+                }
+            ]
     return []
