@@ -15,7 +15,7 @@ def get_catalog():
             sqlalchemy.text("SELECT num_green_potions FROM global_inventory")
         )
         available_stock = result.first().num_green_potions
-    if available_stock:
+    if available_stock > 0:
         return [
             {
                 "sku": "GREEN_POTION",
