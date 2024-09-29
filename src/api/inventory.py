@@ -1,9 +1,11 @@
+import math
+
+import sqlalchemy
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from src.api import auth
-import math
-import sqlalchemy
+
 from src import database as db
+from src.api import auth
 
 router = APIRouter(
     prefix="/inventory",
