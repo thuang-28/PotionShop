@@ -11,18 +11,44 @@ def get_catalog():
     Each unique item combination must have only a single price.
     """
     with db.engine.begin() as connection:
-        result = connection.execute(
-            sqlalchemy.text("SELECT num_green_potions FROM global_inventory")
+        catalog = []
+        potions = (
+            connection.execute(
+                sqlalchemy.text(
+                    "SELECT quantity, potion_type \
+                                 FROM global_potions \
+                                 WHERE quantity > 0"
+                )
+            )
+            .mappings()
+            .fetchall()
         )
-        available_stock = result.first().num_green_potions
-    if available_stock > 0:
-        return [
+    for potion in potions:
+        match potion["potion_type"]:
+            case [100, 0, 0, 0]:
+                name = "Red Potion"
+                price = 50
+            case [0, 100, 0, 0]:
+                name = "Green Potion"
+                price = 50
+            case [0, 0, 100, 0]:
+                name = "Blue Potion"
+                price = 50
+            case _:
+                colors = ("Red", "Green", "Blue", "Dark")
+                percentages = []
+                for idx in range(len(potion["potion_type"])):
+                    percent = potion["potion_type"][idx]
+                    if percent > 0:
+                        percentages.append(percent + "% " + colors[idx])
+                name = " ".join(percentages) + " Potion"
+        catalog.append(
             {
-                "sku": "GREEN_POTION",
-                "name": "green potion",
-                "quantity": available_stock,
-                "price": 50,
-                "potion_type": [0, 100, 0, 0],
+                "sku": name.upper().replace("%", "_").replace(" ", "_"),
+                "name": name,
+                "quantity": potion["quantity"],
+                "price": price,
+                "potion_type": potion["potion_type"],
             }
-        ]
-    return []
+        )
+    return catalog
