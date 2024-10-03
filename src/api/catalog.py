@@ -16,8 +16,9 @@ def get_catalog():
             connection.execute(
                 sqlalchemy.text(
                     "SELECT quantity, potion_type \
-                                 FROM global_potions \
-                                 WHERE quantity > 0"
+                     FROM global_potions \
+                     WHERE quantity > 0 \
+                     LIMIT 6"
                 )
             )
             .mappings()
