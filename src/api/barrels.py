@@ -39,7 +39,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                     SET num_red_ml = num_red_ml + {total_ml[0]}, \
                     num_green_ml = num_green_ml + {total_ml[1]}, \
                     num_blue_ml = num_blue_ml + {total_ml[2]}, \
-                    num_dark_ml = num_dark_ml + {total_ml[3]} \
+                    num_dark_ml = num_dark_ml + {total_ml[3]}, \
                     gold = gold - {total_price}"
             )
         )
