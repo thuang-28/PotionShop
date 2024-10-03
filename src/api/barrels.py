@@ -80,15 +80,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     )
                 )
             )
-            .mappings()
-            .fetchone()
+            .first()
         )
-    enums = ("r", "g", "b", "d")
+    ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     total_cost = 0
     purchase_plan = []
-    for idx in range(len(enums)):
-        color = enums[idx]
-        if inventory[color] < 500:
+    for idx in range(len(ml_in_barrels)):
+        if ml_in_barrels[idx] < 500:
             barrel = min(
                 [
                     item
