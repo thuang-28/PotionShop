@@ -118,17 +118,32 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    total_bottles = sum(
-        cart_dict[cart_id]["items"][item].quantity
-        for item in cart_dict[cart_id]["items"]
-    )
-    total_price = total_bottles * 50
+    print(cart_checkout.payment)
+    # for debug ^
     with db.engine.begin() as connection:
+        total_bottles = 0
+        for item in cart_dict[cart_id]["items"]:
+            total_bottles += item.quantity
+            # modify implementation using SKU table later
+            match item:
+                case "RED_POTION":
+                    potion_type = [100, 0, 0, 0]
+                case "GREEN_POTION":
+                    potion_type = [0, 100, 0, 0]
+                case "BLUE_POTION":
+                    potion_type = [0, 0, 100, 0]
+            connection.execute(
+                sqlalchemy.text(
+                    f"UPDATE global_potions \
+                        SET quantity = quantity + {item.quantity} \
+                            WHERE potion_type = {potion_type}"
+                )
+            )
+        total_price = total_bottles * 50
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
-                    SET num_green_potions = num_green_potions - {total_bottles}, \
-                    gold = gold + {total_price}"
+                    SET gold = gold + {total_price}"
             )
         )
     return {"total_potions_bought": total_bottles, "total_gold_paid": total_price}
