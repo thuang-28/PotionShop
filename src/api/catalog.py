@@ -24,6 +24,7 @@ def get_catalog():
             .fetchall()
         )
     for potion in potions:
+        # modify implementation using SKU table later
         match potion["potion_type"]:
             case [100, 0, 0, 0]:
                 name = "Red Potion"
