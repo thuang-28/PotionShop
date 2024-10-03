@@ -92,7 +92,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     item
                     for item in wholesale_catalog
                     if item.potion_type[idx] == 1
-                    and item.price <= total_cost + inventory["gold"]
+                    and item.price <= total_cost + inventory.gold
                 ],
                 key=lambda b: b.price,
                 default=None,
