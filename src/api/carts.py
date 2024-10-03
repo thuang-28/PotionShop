@@ -134,7 +134,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                     potion_type = [0, 0, 100, 0]
             connection.execute(
                 sqlalchemy.text(
-                    f"UPDATE global_potions \
+                    f"UPDATE potion_inventory \
                         SET quantity = quantity + {item.quantity} \
                             WHERE potion_type = {potion_type}"
                 )

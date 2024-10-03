@@ -29,8 +29,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 total_ml[idx] += potion.potion_type[idx] * potion.quantity
             connection.execute(
                 sqlalchemy.text(
-                    f"MERGE INTO global_potions AS Target \
-                      USING (SELECT potion_type FROM global_potions) AS Source \
+                    f"MERGE INTO potion_inventory AS Target \
+                      USING (SELECT potion_type FROM potion_inventory) AS Source \
                       ON (Source.potion_type = ARRAY{potion.potion_type}) \
                       WHEN MATCHED THEN \
                           UPDATE SET quantity = quantity + {potion.quantity} \

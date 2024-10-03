@@ -28,7 +28,7 @@ def get_inventory():
         potions = connection.execute(
             sqlalchemy.text(
                 "SELECT SUM(quantity) AS total_potions \
-                FROM global_potions"
+                FROM potion_inventory"
             )
         ).first()
     return {
