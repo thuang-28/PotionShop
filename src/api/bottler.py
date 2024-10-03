@@ -75,12 +75,12 @@ def get_bottle_plan():
                     )
                 )
             )
-            .mappings()
-            .fetchone()
+            .first()
         )
+    ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     bottle_plan = []
-    for idx in range(len(inventory)):
-        num_mixable_potions = int(inventory[idx] / 100)
+    for idx in range(len(ml_in_barrels)):
+        num_mixable_potions = int(ml_in_barrels[idx] / 100)
         if num_mixable_potions > 0:
             type = [0, 0, 0, 0]
             type[idx] = 100
