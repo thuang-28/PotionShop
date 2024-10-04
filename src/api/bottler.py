@@ -52,12 +52,12 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 colors = ("R", "G", "B", "D")
                 for i in range(4):
                     if potion.potion_type[i] > 0:
-                        sku += potion.potion_type[i] + colors[i]
+                        sku += str(potion.potion_type[i]) + colors[i]
                 sku += "_POTION"
                 connection.execute(
                     sqlalchemy.text(
                         f"INSERT INTO potion_inventory (sku, quantity, red, green, blue, dark) \
-                          VALUES ({sku}, {potion.quantity}, {potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"
+                          VALUES ('{sku}', {potion.quantity}, {potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"
                     )
                 )
         connection.execute(
