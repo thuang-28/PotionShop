@@ -16,7 +16,8 @@ def get_catalog():
         potions = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT sku, quantity, red, green, blue, dark \
+                    "SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price, \
+                            sku, quantity, red, green, blue, dark \
                      FROM potion_inventory \
                      WHERE quantity > 0 \
                      LIMIT 6"
@@ -29,18 +30,12 @@ def get_catalog():
         name = re.sub(r"([0-9]{1,3})([A-Z])_", r"$1% $2, ", potion["sku"]).replace(
             ", POTION", " Potion"
         )
-        price = int(
-            potion["red"] * 0.6
-            + potion["green"] * 0.5
-            + potion["blue"] * 0.7
-            + potion["dark"] * 0.85
-        )
         catalog.append(
             {
                 "sku": potion["sku"],
                 "name": name,
                 "quantity": potion["quantity"],
-                "price": price,
+                "price": potion["price"],
                 "potion_type": [
                     potion["red"],
                     potion["green"],
