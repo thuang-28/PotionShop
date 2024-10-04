@@ -12,9 +12,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-# incredibly crude
-cart_dict = {}
-
 
 class search_sort_options(str, Enum):
     customer_name = "customer_name"
@@ -95,8 +92,16 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    cart_id = len(cart_dict) + 1
-    cart_dict[cart_id] = {"customer": new_cart, "items": {}}
+    with db.engine.begin() as connection:
+        customer_id = connection.execute(
+            sqlalchemy.text(
+                f"INSERT INTO customers (name, class, level) VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level}"
+            )
+        ).lastrowid
+        cart_id = connection.execute(
+            sqlalchemy.text(f"INSERT INTO carts (customer_id) VALUES ({customer_id})")
+        ).lastrowid
+
     return {"cart_id": cart_id}
 
 
@@ -107,7 +112,28 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-    cart_dict[cart_id]["items"][item_sku] = cart_item
+    with db.engine.begin() as connection:
+        recordExists = connection.execute(
+            sqlalchemy.text(
+                f"SELECT 1 FROM cart_items \
+                      WHERE cart_id = {cart_id} \
+                        AND sku = {item_sku}"
+            )
+        )
+        if recordExists.first():
+            connection.execute(
+                sqlalchemy.text(
+                    f"UPDATE cart_items \
+                        SET quantity = {cart_item.quantity}"
+                )
+            )
+        else:
+            connection.execute(
+                sqlalchemy.text(
+                    f"INSERT INTO cart_items (cart_id, sku, quantity) \
+                            VALUES ({cart_id}, {item_sku}, {cart_item.quantity})"
+                )
+            )
     return "OK"
 
 
@@ -122,14 +148,26 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     # for debug ^
     with db.engine.begin() as connection:
         total_bottles = 0
-        for item_sku in cart_dict[cart_id]["items"]:
-            total_bottles += item_sku.quantity
+        total_price = 0
+        cart_items = connection.execute(
             sqlalchemy.text(
-                f"UPDATE potion_inventory \
-                    SET quantity = quantity - {item_sku.quantity} \
-                    WHERE sku = {item_sku}"
+                f"SELECT sku, quantity FROM cart_items \
+                      WHERE cart_id = {cart_id}"
             )
-        total_price = total_bottles * 50
+        ).mappings().fetchall()
+        for item in cart_items:
+            total_bottles += item["quantity"]
+            total_price += connection.execute(
+                sqlalchemy.text(
+                    f"SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price \
+                      FROM potion_inventory \
+                      WHERE sku = {item["sku"]}"
+                )).first().price
+            connection.execute(sqlalchemy.text(
+                f"UPDATE potion_inventory \
+                    SET quantity = quantity - {item["quantity"]} \
+                    WHERE sku = {item["sku"]}"
+            ))
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
