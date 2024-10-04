@@ -30,7 +30,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             recordExists = connection.execute(
                 sqlalchemy.text(
                     f"SELECT 1 FROM potion_inventory \
-                      WHERE potion_type = {potion.potion_type}"
+                      WHERE potion_type = ARRAY{potion.potion_type}"
                 )
             )
             if recordExists.first():
@@ -38,14 +38,14 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     sqlalchemy.text(
                         f"UPDATE potion_inventory \
                           SET quantity = quantity + {potion.quantity} \
-                          WHERE potion_type = {potion.potion_type}"
+                          WHERE potion_type = ARRAY{potion.potion_type}"
                     )
                 )
             else:
                 connection.execute(
                     sqlalchemy.text(
                         f"INSERT INTO potion_inventory (quantity, potion_type) \
-                          VALUES ({potion.quantity}, {potion.potion_type})"
+                          VALUES ({potion.quantity}, ARRAY{potion.potion_type})"
                     )
                 )
         connection.execute(
