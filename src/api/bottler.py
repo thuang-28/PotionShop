@@ -27,17 +27,27 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         for potion in potions_delivered:
             for idx in range(len(total_ml)):
                 total_ml[idx] += potion.potion_type[idx] * potion.quantity
-            connection.execute(
+            recordExists = connection.execute(
                 sqlalchemy.text(
-                    f"MERGE INTO potion_inventory AS Target \
-                      USING (SELECT potion_type FROM potion_inventory) AS Source \
-                      ON (Source.potion_type = ARRAY{potion.potion_type}) \
-                      WHEN MATCHED THEN \
-                          UPDATE SET quantity = quantity + {potion.quantity} \
-                      WHEN NOT MATCHED BY Target \
-                          THEN INSERT (quantity, color_rgb) VALUES ({potion.quantity}, {potion.potion_type})"
+                    f"SELECT 1 FROM potion_inventory \
+                      WHERE potion_type = {potion.potion_type}"
                 )
             )
+            if recordExists.first():
+                connection.execute(
+                    sqlalchemy.text(
+                        f"UPDATE potion_inventory \
+                          SET quantity = quantity + {potion.quantity} \
+                          WHERE potion_type = {potion.potion_type}"
+                    )
+                )
+            else:
+                connection.execute(
+                    sqlalchemy.text(
+                        f"INSERT INTO potion_inventory (quantity, potion_type) \
+                          VALUES ({potion.quantity}, {potion.potion_type})"
+                    )
+                )
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
@@ -64,19 +74,16 @@ def get_bottle_plan():
     # Initial logic: bottle all barrels into red potions.
     with db.engine.begin() as connection:
         inventory = (
-            (
-                connection.execute(
-                    sqlalchemy.text(
-                        "SELECT num_red_ml AS r, \
+            connection.execute(
+                sqlalchemy.text(
+                    "SELECT num_red_ml AS r, \
                             num_green_ml AS g, \
                             num_blue_ml AS b, \
                             num_dark_ml AS d \
                         FROM global_inventory"
-                    )
                 )
             )
-            .first()
-        )
+        ).first()
     ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     bottle_plan = []
     for idx in range(len(ml_in_barrels)):
