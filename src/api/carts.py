@@ -165,8 +165,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 )).first().price
             connection.execute(sqlalchemy.text(
                 f"UPDATE potion_inventory \
-                    SET quantity = quantity - {item["quantity"]} \
-                    WHERE sku = {item["sku"]}"
+                    SET quantity = quantity - {item['quantity']} \
+                    WHERE sku = {item['sku']}"
             ))
         connection.execute(
             sqlalchemy.text(
