@@ -85,7 +85,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     total_cost = 0
     purchase_plan = []
-    for idx in range(len(ml_in_barrels)):
+    for idx in range(4):
         if ml_in_barrels[idx] < 500:
             barrel = min(
                 [

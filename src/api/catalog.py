@@ -1,6 +1,7 @@
 import sqlalchemy
 from fastapi import APIRouter
 from src import database as db
+import re
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ def get_catalog():
         potions = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT quantity, potion_type \
+                    "SELECT sku, quantity, red, green, blue, dark \
                      FROM potion_inventory \
                      WHERE quantity > 0 \
                      LIMIT 6"
@@ -25,32 +26,27 @@ def get_catalog():
             .fetchall()
         )
     for potion in potions:
-        # modify implementation using SKU table later
-        match potion["potion_type"]:
-            case [100, 0, 0, 0]:
-                name = "Red Potion"
-                price = 50
-            case [0, 100, 0, 0]:
-                name = "Green Potion"
-                price = 50
-            case [0, 0, 100, 0]:
-                name = "Blue Potion"
-                price = 50
-            case _:
-                colors = ("Red", "Green", "Blue", "Dark")
-                percentages = []
-                for idx in range(len(potion["potion_type"])):
-                    percent = potion["potion_type"][idx]
-                    if percent > 0:
-                        percentages.append(percent + "% " + colors[idx])
-                name = " ".join(percentages) + " Potion"
+        name = re.sub(r"([0-9]{1,3})([A-Z])_", r"$1% $2, ", potion["sku"]).replace(
+            ", POTION", " Potion"
+        )
+        price = int(
+            potion["red"] * 0.6
+            + potion["green"] * 0.5
+            + potion["blue"] * 0.7
+            + potion["dark"] * 0.85
+        )
         catalog.append(
             {
-                "sku": name.upper().replace("%", "_").replace(" ", "_"),
+                "sku": potion["sku"],
                 "name": name,
                 "quantity": potion["quantity"],
                 "price": price,
-                "potion_type": potion["potion_type"],
+                "potion_type": [
+                    potion["red"],
+                    potion["green"],
+                    potion["blue"],
+                    potion["dark"],
+                ],
             }
         )
     return catalog

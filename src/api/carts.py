@@ -122,22 +122,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     # for debug ^
     with db.engine.begin() as connection:
         total_bottles = 0
-        for item in cart_dict[cart_id]["items"]:
-            total_bottles += item.quantity
-            # modify implementation using SKU table later
-            match item:
-                case "RED_POTION":
-                    potion_type = [100, 0, 0, 0]
-                case "GREEN_POTION":
-                    potion_type = [0, 100, 0, 0]
-                case "BLUE_POTION":
-                    potion_type = [0, 0, 100, 0]
-            connection.execute(
-                sqlalchemy.text(
-                    f"UPDATE potion_inventory \
-                        SET quantity = quantity + {item.quantity} \
-                            WHERE potion_type = {potion_type}"
-                )
+        for item_sku in cart_dict[cart_id]["items"]:
+            total_bottles += item_sku.quantity
+            sqlalchemy.text(
+                f"UPDATE potion_inventory \
+                    SET quantity = quantity - {item_sku.quantity} \
+                    WHERE sku = {item_sku}"
             )
         total_price = total_bottles * 50
         connection.execute(

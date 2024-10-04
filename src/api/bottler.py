@@ -30,7 +30,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             recordExists = connection.execute(
                 sqlalchemy.text(
                     f"SELECT 1 FROM potion_inventory \
-                      WHERE potion_type = ARRAY{potion.potion_type}"
+                      WHERE red = {potion.potion_type[0]}, \
+                            green = {potion.potion_type[1]}, \
+                            blue = {potion.potion_type[2]}, \
+                            dark = {potion.potion_type[3]}"
                 )
             )
             if recordExists.first():
@@ -38,14 +41,23 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     sqlalchemy.text(
                         f"UPDATE potion_inventory \
                           SET quantity = quantity + {potion.quantity} \
-                          WHERE potion_type = ARRAY{potion.potion_type}"
+                          WHERE red = {potion.potion_type[0]}, \
+                                green = {potion.potion_type[1]}, \
+                                blue = {potion.potion_type[2]}, \
+                                dark = {potion.potion_type[3]}"
                     )
                 )
             else:
+                sku = ""
+                colors = ("R", "G", "B", "D")
+                for i in range(4):
+                    if potion.potion_type[i] > 0:
+                        sku += potion.potion_type[i] + colors[i]
+                sku += "_POTION"
                 connection.execute(
                     sqlalchemy.text(
-                        f"INSERT INTO potion_inventory (quantity, potion_type) \
-                          VALUES ({potion.quantity}, ARRAY{potion.potion_type})"
+                        f"INSERT INTO potion_inventory (sku, quantity, red, green, blue, dark) \
+                          VALUES ({sku}, {potion.quantity}, {potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"
                     )
                 )
         connection.execute(
