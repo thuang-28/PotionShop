@@ -21,7 +21,8 @@ def reset():
         connection.execute(
             sqlalchemy.text(
                 "UPDATE global_inventory \
-                    SET num_red_ml = 0, num_green_ml = 0, num_blue_ml = 0, num_dark_ml = 0, gold = 100; \
+                    SET num_red_ml = 0, num_green_ml = 0, num_blue_ml = 0, num_dark_ml = 0, \
+                        gold = 100, potion_capacity = 1, ml_capacity = 1 \
                  DELETE FROM potion_inventory; \
                  DELETE FROM carts; \
                  DELETE FROM cart_items; \
