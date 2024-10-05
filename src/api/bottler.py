@@ -103,7 +103,7 @@ def get_bottle_plan():
                 FROM potion_inventory"
             )
         ).first()
-    total_bottles = sum_result.total_potions if sum_result.total_potions else 0
+    total_bottles = sum_result.total_potions or 0
     ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     bottle_plan = []
     for idx in range(4):

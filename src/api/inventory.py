@@ -32,7 +32,7 @@ def get_inventory():
             )
         ).first()
     return {
-        "number_of_potions": potions.total_potions if potions.total_potions else 0,
+        "number_of_potions": potions.total_potions or 0,
         "ml_in_barrels": inventory.total_ml,
         "gold": inventory.gold,
     }
@@ -58,7 +58,7 @@ def get_capacity_plan():
                 "SELECT SUM(quantity) AS total_potions FROM potion_inventory"
             )
         ).first()
-    total_bottles = sum_result.total_potions if sum_result.total_potions else 0
+    total_bottles = sum_result.total_potions or 0
     if stats.gold >= 1000:
         if (stats.potion_capacity - total_bottles) < 10:
             plan["ml_capacity"] = 1
