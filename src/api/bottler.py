@@ -108,7 +108,7 @@ def get_bottle_plan():
     bottle_plan = []
     for idx in range(4):
         num_mixable_potions = min(
-            int(ml_in_barrels[idx] / 100), inventory.potion_capacity - total_bottles
+            int(ml_in_barrels[idx] / 100), inventory.potion_capacity * 50 - total_bottles
         )
         total_bottles += num_mixable_potions
         if num_mixable_potions > 0:
