@@ -35,8 +35,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                         AND blue = {potion.potion_type[2]} \
                         AND dark = {potion.potion_type[3]}"
                 )
-            )
-            if recordExists.first():
+            ).first()
+            if recordExists:
                 connection.execute(
                     sqlalchemy.text(
                         f"UPDATE potion_inventory \
@@ -88,30 +88,23 @@ def get_bottle_plan():
         inventory = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT potion_capacity, \
-                            num_red_ml AS r, \
-                            num_green_ml AS g, \
-                            num_blue_ml AS b, \
-                            num_dark_ml AS d \
-                        FROM global_inventory"
+                    "SELECT potion_capacity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
+                     FROM global_inventory"
                 )
             )
         ).first()
         total_bottles = (
             connection.execute(
-                sqlalchemy.text(
-                    "SELECT SUM(quantity) AS total \
-                     FROM potion_inventory"
-                )
+                sqlalchemy.text("SELECT SUM(quantity) AS total FROM potion_inventory")
             )
             .first().total
             or 0
         )
-    ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     bottle_plan = []
+    ml_tuple = inventory[1:]
     for idx in range(4):
         num_mixable_potions = min(
-            int(ml_in_barrels[idx] / 100),
+            int(ml_tuple[idx] / 100),
             inventory.potion_capacity * 50 - total_bottles,
         )
         total_bottles += num_mixable_potions
