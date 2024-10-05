@@ -84,7 +84,7 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
             sqlalchemy.text(
                 f"UPDATE global_inventory \
                   SET potion_capacity = potion_capacity + {capacity_purchase.potion_capacity}, \
-                      ml_capacity = {capacity_purchase.ml_capacity}"
+                      ml_capacity = ml_capacity + {capacity_purchase.ml_capacity}"
             )
         )
     return "OK"
