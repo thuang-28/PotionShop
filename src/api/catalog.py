@@ -35,7 +35,7 @@ def get_catalog():
                 "sku": potion["sku"],
                 "name": name,
                 "quantity": potion["quantity"],
-                "price": potion["price"],
+                "price": int(potion["price"]),
                 "potion_type": [
                     potion["red"],
                     potion["green"],

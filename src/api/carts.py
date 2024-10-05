@@ -161,7 +161,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         )
         for item in cart_items:
             total_bottles += item["quantity"]
-            total_price += (
+            total_price += int(
                 connection.execute(
                     sqlalchemy.text(
                         f"SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price \
