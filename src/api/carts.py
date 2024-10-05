@@ -119,8 +119,8 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
                       WHERE cart_id = {cart_id} \
                         AND sku = {item_sku}"
             )
-        )
-        if recordExists.first():
+        ).first()
+        if recordExists:
             connection.execute(
                 sqlalchemy.text(
                     f"UPDATE cart_items \
