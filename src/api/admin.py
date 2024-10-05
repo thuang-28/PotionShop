@@ -22,7 +22,10 @@ def reset():
             sqlalchemy.text(
                 "UPDATE global_inventory \
                     SET num_red_ml = 0, num_green_ml = 0, num_blue_ml = 0, num_dark_ml = 0, gold = 100; \
-                 DELETE from potion_inventory"
+                 DELETE FROM potion_inventory; \
+                 DELETE FROM carts; \
+                 DELETE FROM cart_items; \
+                 DELETE FROM customers;"
             )
         )
     return "OK"
