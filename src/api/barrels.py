@@ -67,37 +67,48 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     # Barrel(sku='LARGE_DARK_BARREL', ml_per_barrel=10000, potion_type=[0, 0, 0, 1], price=750, quantity=10)
 
     with db.engine.begin() as connection:
-        inventory = (
-            (
-                connection.execute(
-                    sqlalchemy.text(
-                        "SELECT gold, \
-                            num_red_ml AS r, \
-                            num_green_ml AS g, \
-                            num_blue_ml AS b, \
-                            num_dark_ml AS d \
-                         FROM global_inventory"
-                    )
-                )
-            )
+        gold = (
+            (connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")))
             .first()
+            .gold
         )
-    ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
-    total_cost = 0
-    purchase_plan = []
-    for idx in range(4):
-        if ml_in_barrels[idx] < 500:
-            barrel = min(
-                [
-                    item
-                    for item in wholesale_catalog
-                    if item.potion_type[idx] == 1
-                    and inventory.gold >= item.price + total_cost
-                ],
-                key=lambda b: b.price,
-                default=None,
+        total_inventory_ml = connection.execute(
+            sqlalchemy.text(
+                "SELECT SUM(r) AS red_ml, \
+                        SUM(g) AS green_ml, \
+                        SUM(b) AS blue_ml, \
+                        SUM(d) AS dark_ml \
+                 FROM ( \
+                    SELECT num_red_ml AS r, \
+                        num_green_ml AS g, \
+                        num_blue_ml AS b, \
+                        num_dark_ml AS d \
+                    FROM global_inventory UNION ALL \
+                        SELECT red * quantity AS r, \
+                            green * quantity AS g, \
+                            blue * quantity AS b, \
+                            dark * quantity AS d \
+                    FROM potion_inventory WHERE quantity > 0 \
+                ) AS mls"
             )
-            if barrel:
-                total_cost += barrel.price
-                purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+        ).first()
+    ml_tuple = (
+        total_inventory_ml.red_ml,
+        total_inventory_ml.green_ml,
+        total_inventory_ml.blue_ml,
+        total_inventory_ml.dark_ml,
+    )
+    purchase_plan = []
+    priority_idx = ml_tuple.index(min(ml_tuple))
+    barrel = max(
+        [
+            item
+            for item in wholesale_catalog
+            if item.potion_type[priority_idx] == 1 and gold >= item.price
+        ],
+        key=lambda b: b.ml_per_barrel,
+        default=None,
+    )
+    if barrel:
+        purchase_plan.append({"sku": barrel.sku, "quantity": 1})
     return purchase_plan
