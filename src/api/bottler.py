@@ -54,10 +54,18 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     if potion.potion_type[i] > 0:
                         sku += str(potion.potion_type[i]) + colors[i]
                 sku += "_POTION"
+                price = int(
+                    potion.potion_type[0] * 0.55
+                    + potion.potion_type[1] * 0.5
+                    + potion.potion_type[2] * 0.65
+                    + potion.potion_type[3] * 0.8
+                )
                 connection.execute(
                     sqlalchemy.text(
-                        f"INSERT INTO potion_inventory (sku, quantity, red, green, blue, dark) \
-                          VALUES ('{sku}', {potion.quantity}, {potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"
+                        f"INSERT INTO potion_inventory (sku, quantity, price, \
+                                                        red, green, blue, dark) \
+                          VALUES ('{sku}', {potion.quantity}, {price}, \
+                                   {potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"
                     )
                 )
         connection.execute(
@@ -97,7 +105,8 @@ def get_bottle_plan():
             connection.execute(
                 sqlalchemy.text("SELECT SUM(quantity) AS total FROM potion_inventory")
             )
-            .first().total
+            .first()
+            .total
             or 0
         )
     bottle_plan = []

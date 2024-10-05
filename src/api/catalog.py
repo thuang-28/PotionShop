@@ -16,8 +16,7 @@ def get_catalog():
         potions = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price, \
-                            sku, quantity, red, green, blue, dark \
+                    "SELECT sku, quantity, price, red, green, blue, dark \
                      FROM potion_inventory \
                      WHERE quantity > 0 \
                      LIMIT 6"

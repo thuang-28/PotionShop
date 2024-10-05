@@ -13,6 +13,7 @@ CREATE TABLE global_inventory (
 CREATE TABLE potion_inventory (
     sku text NOT NULL,
     quantity integer NOT NULL,
+    price integer NOT NULL,
     red integer NOT NULL,
     green integer NOT NULL,
     blue integer NOT NULL,

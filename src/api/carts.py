@@ -164,7 +164,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             total_price += int(
                 connection.execute(
                     sqlalchemy.text(
-                        f"SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price \
+                        f"SELECT price \
                           FROM potion_inventory \
                           WHERE sku = {item['sku']}"
                     )
