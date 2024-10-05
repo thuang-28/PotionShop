@@ -97,18 +97,22 @@ def get_bottle_plan():
                 )
             )
         ).first()
-        sum_result = connection.execute(
-            sqlalchemy.text(
-                "SELECT SUM(quantity) AS total_potions \
-                FROM potion_inventory"
+        total_bottles = (
+            connection.execute(
+                sqlalchemy.text(
+                    "SELECT SUM(quantity) AS total \
+                     FROM potion_inventory"
+                )
             )
-        ).first()
-    total_bottles = sum_result.total_potions or 0
+            .first().total
+            or 0
+        )
     ml_in_barrels = (inventory.r, inventory.g, inventory.b, inventory.d)
     bottle_plan = []
     for idx in range(4):
         num_mixable_potions = min(
-            int(ml_in_barrels[idx] / 100), inventory.potion_capacity * 50 - total_bottles
+            int(ml_in_barrels[idx] / 100),
+            inventory.potion_capacity * 50 - total_bottles,
         )
         total_bottles += num_mixable_potions
         if num_mixable_potions > 0:

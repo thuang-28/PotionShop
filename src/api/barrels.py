@@ -78,10 +78,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         ).first()
         total_inventory_ml = connection.execute(
             sqlalchemy.text(
-                "SELECT SUM(r) AS red_ml, \
-                        SUM(g) AS green_ml, \
-                        SUM(b) AS blue_ml, \
-                        SUM(d) AS dark_ml \
+                "SELECT SUM(r), SUM(g), SUM(b), SUM(d) \
                  FROM ( \
                     SELECT num_red_ml AS r, \
                         num_green_ml AS g, \
@@ -96,14 +93,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 ) AS mls"
             )
         ).first()
-    ml_tuple = (
-        total_inventory_ml.red_ml,
-        total_inventory_ml.green_ml,
-        total_inventory_ml.blue_ml,
-        total_inventory_ml.dark_ml,
-    )
     purchase_plan = []
-    priority_idx = ml_tuple.index(min(ml_tuple))
+    priority_idx = total_inventory_ml.index(min(total_inventory_ml))
     barrel = max(
         [
             item

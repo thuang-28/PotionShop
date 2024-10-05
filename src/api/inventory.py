@@ -50,15 +50,16 @@ def get_capacity_plan():
         stats = connection.execute(
             sqlalchemy.text(
                 "SELECT num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml, \
-                                        gold, potion_capacity, ml_capacity FROM global_inventory"
+                        gold, potion_capacity, ml_capacity FROM global_inventory"
             )
         ).first()
-        sum_result = connection.execute(
-            sqlalchemy.text(
-                "SELECT SUM(quantity) AS total_potions FROM potion_inventory"
+        total_bottles = (
+            connection.execute(
+                sqlalchemy.text("SELECT SUM(quantity) AS total FROM potion_inventory")
             )
-        ).first()
-    total_bottles = sum_result.total_potions or 0
+            .first().total
+            or 0
+        )
     if stats.gold >= 1000:
         if (stats.potion_capacity - total_bottles) < 10:
             plan["ml_capacity"] = 1
