@@ -12,11 +12,11 @@ CREATE TABLE global_inventory (
 
 CREATE TABLE potion_inventory (
     sku text NOT NULL,
-    quantity integer DEFAULT 0 NOT NULL,
-    red integer DEFAULT 0 NOT NULL,
-    green integer DEFAULT 0 NOT NULL,
-    blue integer DEFAULT 0 NOT NULL,
-    dark integer DEFAULT 0 NOT NULL,
+    quantity integer NOT NULL,
+    red integer NOT NULL,
+    green integer NOT NULL,
+    blue integer NOT NULL,
+    dark integer NOT NULL,
     PRIMARY KEY (sku)
 );
 
@@ -40,7 +40,7 @@ CREATE TABLE carts (
 CREATE TABLE cart_items (
     cart_id bigint NOT NULL,
     sku text NOT NULL,
-    quantity integer DEFAULT 0 NOT NULL,
+    quantity integer NOT NULL,
     PRIMARY KEY (cart_id, sku),
     FOREIGN KEY (cart_id) REFERENCES carts(id),
     FOREIGN KEY (sku) REFERENCES potion_inventory(sku)
