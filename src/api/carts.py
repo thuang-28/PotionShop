@@ -149,25 +149,35 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
         total_bottles = 0
         total_price = 0
-        cart_items = connection.execute(
-            sqlalchemy.text(
-                f"SELECT sku, quantity FROM cart_items \
+        cart_items = (
+            connection.execute(
+                sqlalchemy.text(
+                    f"SELECT sku, quantity FROM cart_items \
                       WHERE cart_id = {cart_id}"
+                )
             )
-        ).mappings().fetchall()
+            .mappings()
+            .fetchall()
+        )
         for item in cart_items:
             total_bottles += item["quantity"]
-            total_price += connection.execute(
+            total_price += (
+                connection.execute(
+                    sqlalchemy.text(
+                        f"SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price \
+                          FROM potion_inventory \
+                          WHERE sku = {item['sku']}"
+                    )
+                )
+                .first().price
+            )
+            connection.execute(
                 sqlalchemy.text(
-                    f"SELECT red*0.6 + green*0.5 + blue*0.7 + dark*0.85 AS price \
-                      FROM potion_inventory \
-                      WHERE sku = {item["sku"]}"
-                )).first().price
-            connection.execute(sqlalchemy.text(
-                f"UPDATE potion_inventory \
+                    f"UPDATE potion_inventory \
                     SET quantity = quantity - {item['quantity']} \
                     WHERE sku = {item['sku']}"
-            ))
+                )
+            )
         connection.execute(
             sqlalchemy.text(
                 f"UPDATE global_inventory \
