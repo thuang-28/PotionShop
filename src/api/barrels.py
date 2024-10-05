@@ -67,11 +67,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     # Barrel(sku='LARGE_DARK_BARREL', ml_per_barrel=10000, potion_type=[0, 0, 0, 1], price=750, quantity=10)
 
     with db.engine.begin() as connection:
-        gold = (
-            (connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")))
-            .first()
-            .gold
-        )
+        stats = (
+            connection.execute(
+                sqlalchemy.text(
+                    "SELECT gold, ml_capacity, \
+                            num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_barrel_ml \
+                     FROM global_inventory"
+                )
+            )
+        ).first()
         total_inventory_ml = connection.execute(
             sqlalchemy.text(
                 "SELECT SUM(r) AS red_ml, \
@@ -104,7 +108,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         [
             item
             for item in wholesale_catalog
-            if item.potion_type[priority_idx] == 1 and gold >= item.price
+            if item.potion_type[priority_idx] == 1
+            and stats.gold >= item.price
+            and stats.ml_capacity * 10000 >= stats.total_barrel_ml + item.ml_per_barrel
         ],
         key=lambda b: b.ml_per_barrel,
         default=None,
