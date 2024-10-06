@@ -93,15 +93,26 @@ def post_visits(visit_id: int, customers: list[Customer]):
 def create_cart(new_cart: Customer):
     """ """
     with db.engine.begin() as connection:
-        customer_id = connection.execute(
-            sqlalchemy.text(
-                f"INSERT INTO customers (name, class, level) \
-                  VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level})"
+        customer_id = (
+            connection.execute(
+                sqlalchemy.text(
+                    f"INSERT INTO customers (name, class, level) \
+                                  VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level}) \
+                      RETURNING customers.id AS id"
+                )
             )
-        ).lastrowid
-        cart_id = connection.execute(
-            sqlalchemy.text(f"INSERT INTO carts (customer_id) VALUES ({customer_id})")
-        ).lastrowid
+            .first().id
+        )
+        cart_id = (
+            connection.execute(
+                sqlalchemy.text(
+                    f"INSERT INTO carts (customer_id) \
+                                  VALUES ({customer_id}) \
+                      RETURNING carts.id AS id"
+                )
+            )
+            .first().id
+        )
 
     return {"cart_id": cart_id}
 
@@ -170,7 +181,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                           WHERE sku = {item['sku']}"
                     )
                 )
-                .first().price
+                .first()
+                .price
             )
             connection.execute(
                 sqlalchemy.text(
