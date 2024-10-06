@@ -95,7 +95,8 @@ def create_cart(new_cart: Customer):
     with db.engine.begin() as connection:
         customer_id = connection.execute(
             sqlalchemy.text(
-                f"INSERT INTO customers (name, class, level) VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level}"
+                f"INSERT INTO customers (name, class, level) \
+                  VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level})"
             )
         ).lastrowid
         cart_id = connection.execute(
