@@ -17,5 +17,5 @@ def post_time(timestamp: Timestamp):
     """
     Share current time.
     """
-    print(f"It is {timestamp.hour} o'clock on {timestamp.day}.")
+    print(f"[Log] It is {timestamp.hour} o'clock on {timestamp.day}.")
     return "OK"

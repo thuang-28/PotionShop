@@ -77,7 +77,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     num_dark_ml = num_dark_ml - {total_ml[3]}"
             )
         )
-    print(f"potions delivered: {potions_delivered} order_id: {order_id}")
+    print(f"[Log] Potions delivered: {potions_delivered} Order Id: {order_id}")
     return "OK"
 
 
@@ -121,7 +121,7 @@ def get_bottle_plan():
             type = [0, 0, 0, 0]
             type[idx] = 100
             bottle_plan.append({"potion_type": type, "quantity": num_mixable_potions})
-    print(f"Bottle Plan: {bottle_plan}")
+    print(f"[Log] Bottle Plan: {bottle_plan}")
     return bottle_plan
 
 

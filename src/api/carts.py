@@ -148,7 +148,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
                             VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})"
                 )
             )
-        print(f"cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}")
+        print(f"[Log] cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}")
     return "OK"
 
 

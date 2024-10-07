@@ -29,5 +29,5 @@ def reset():
                  DELETE FROM potion_inventory;"
             )
         )
-    print("Game state has been reset.")
+    print("[Log] Game state has been reset.")
     return "OK"
