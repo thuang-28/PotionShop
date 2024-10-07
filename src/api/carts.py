@@ -101,7 +101,8 @@ def create_cart(new_cart: Customer):
                       RETURNING customers.id AS id"
                 )
             )
-            .first().id
+            .first()
+            .id
         )
         cart_id = (
             connection.execute(
@@ -111,7 +112,8 @@ def create_cart(new_cart: Customer):
                       RETURNING carts.id AS id"
                 )
             )
-            .first().id
+            .first()
+            .id
         )
 
     return {"cart_id": cart_id}
@@ -163,7 +165,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         cart_items = (
             connection.execute(
                 sqlalchemy.text(
-                    f"SELECT sku, quantity FROM cart_items \
+                    f"SELECT cart_items.sku, cart_items.quantity, potion_inventory.price \
+                      FROM cart_items \
+                      JOIN potion_inventory ON cart_items.sku = potion_inventory.sku \
                       WHERE cart_id = {cart_id}"
                 )
             )
@@ -172,17 +176,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         )
         for item in cart_items:
             total_bottles += item["quantity"]
-            total_price += int(
-                connection.execute(
-                    sqlalchemy.text(
-                        f"SELECT price \
-                          FROM potion_inventory \
-                          WHERE sku = '{item['sku']}'"
-                    )
-                )
-                .first()
-                .price
-            )
+            total_price += item["quantity"] * item["price"]
             connection.execute(
                 sqlalchemy.text(
                     f"UPDATE potion_inventory \
@@ -196,5 +190,5 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                     SET gold = gold + {total_price}"
             )
         )
-        print(f"Checked out: {cart_id}, Payment string: {cart_checkout.payment}")
+        print(f"[Log] Cart ID {cart_id} checked out! Payment string: {cart_checkout.payment}, Total payment: {total_price}, Total bought: {total_bottles}")
     return {"total_potions_bought": total_bottles, "total_gold_paid": total_price}
