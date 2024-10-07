@@ -129,7 +129,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
             sqlalchemy.text(
                 f"SELECT 1 FROM cart_items \
                       WHERE cart_id = {cart_id} \
-                        AND sku = {item_sku}"
+                        AND sku = '{item_sku}'"
             )
         ).first()
         if recordExists:
@@ -143,7 +143,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
             connection.execute(
                 sqlalchemy.text(
                     f"INSERT INTO cart_items (cart_id, sku, quantity) \
-                            VALUES ({cart_id}, {item_sku}, {cart_item.quantity})"
+                            VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})"
                 )
             )
     return "OK"
@@ -178,7 +178,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                     sqlalchemy.text(
                         f"SELECT price \
                           FROM potion_inventory \
-                          WHERE sku = {item['sku']}"
+                          WHERE sku = '{item['sku']}'"
                     )
                 )
                 .first()
@@ -188,7 +188,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 sqlalchemy.text(
                     f"UPDATE potion_inventory \
                     SET quantity = quantity - {item['quantity']} \
-                    WHERE sku = {item['sku']}"
+                    WHERE sku = '{item['sku']}'"
                 )
             )
         connection.execute(
