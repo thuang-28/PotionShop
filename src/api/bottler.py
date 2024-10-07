@@ -121,6 +121,7 @@ def get_bottle_plan():
             type = [0, 0, 0, 0]
             type[idx] = 100
             bottle_plan.append({"potion_type": type, "quantity": num_mixable_potions})
+    print(f"Bottle Plan: {bottle_plan}")
     return bottle_plan
 
 

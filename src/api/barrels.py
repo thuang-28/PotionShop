@@ -108,4 +108,5 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     )
     if barrel:
         purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+    print(f"Purchase Plan: {purchase_plan}")
     return purchase_plan

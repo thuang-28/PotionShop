@@ -146,6 +146,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
                             VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})"
                 )
             )
+        print(f"cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}")
     return "OK"
 
 
@@ -156,8 +157,6 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    print(cart_checkout.payment)
-    # for debug ^
     with db.engine.begin() as connection:
         total_bottles = 0
         total_price = 0
@@ -197,4 +196,5 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                     SET gold = gold + {total_price}"
             )
         )
+        print(f"Checked out: {cart_id}, Payment string: {cart_checkout.payment}")
     return {"total_potions_bought": total_bottles, "total_gold_paid": total_price}
