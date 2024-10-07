@@ -65,6 +65,7 @@ def get_capacity_plan():
             plan["ml_capacity"] = 1
         elif (stats.ml_capacity - stats.total_ml) < 500:
             plan["potion_capacity"] = 1
+    print(f"Capacity purchase plan: {plan}")
     return plan
 
 
@@ -88,4 +89,5 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
                       ml_capacity = ml_capacity + {capacity_purchase.ml_capacity}"
             )
         )
+        print(f"Capacity delivered: Potion {capacity_purchase.potion_capacity}, ML {capacity_purchase.ml_capacity}, order id: {order_id}")
     return "OK"
