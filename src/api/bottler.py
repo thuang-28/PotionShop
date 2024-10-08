@@ -108,8 +108,11 @@ def get_bottle_plan():
                     """
                     SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml,
                            potion_capacity,
-                           SUM(quantity) AS total_potions
-                    FROM global_inventory, potion_inventory
+                           (
+                               SELECT SUM(quantity) AS total_potions
+                                 FROM potion_inventory
+                            )
+                    FROM global_inventory
                     """
                 )
             )

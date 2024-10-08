@@ -21,9 +21,9 @@ def get_inventory():
         inventory = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT gold, SUM(quantity) AS total_potions,
+                SELECT gold, (SELECT SUM(quantity) AS total_potions FROM potion_inventory),
                        num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml
-                  FROM global_inventory, potion_inventory
+                  FROM global_inventory
                 """
             )
         ).first()
@@ -47,9 +47,12 @@ def get_capacity_plan():
             sqlalchemy.text(
                 """
                 SELECT num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml,
-                       SUM(quantity) AS total_bottles,
+                       (
+                            SELECT SUM(quantity) AS total_bottles
+                              FROM potion_inventory
+                        ),
                        gold, potion_capacity, ml_capacity
-                  FROM global_inventory, potion_inventory
+                  FROM global_inventory
                 """
             )
         ).first()
