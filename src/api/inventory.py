@@ -77,9 +77,11 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"UPDATE global_inventory
-                  SET potion_capacity = potion_capacity + {capacity_purchase.potion_capacity},
-                      ml_capacity = ml_capacity + {capacity_purchase.ml_capacity}"
+                f"""
+                UPDATE global_inventory
+                   SET potion_capacity = potion_capacity + {capacity_purchase.potion_capacity},
+                       ml_capacity = ml_capacity + {capacity_purchase.ml_capacity}
+                """
             )
         )
         print(f"[Log] Capacity delivered: Potion {capacity_purchase.potion_capacity}, ML {capacity_purchase.ml_capacity}, order id: {order_id}")
