@@ -21,7 +21,11 @@ def get_inventory():
         inventory = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT gold, (SELECT SUM(quantity) AS total_potions FROM potion_inventory),
+                SELECT gold,
+                       (
+                           SELECT SUM(quantity) AS total_potions
+                             FROM potion_inventory
+                        ),
                        num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml
                   FROM global_inventory
                 """
