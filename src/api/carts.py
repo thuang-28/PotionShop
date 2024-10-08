@@ -127,28 +127,17 @@ class CartItem(BaseModel):
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
     with db.engine.begin() as connection:
-        recordExists = connection.execute(
+        connection.execute(
             sqlalchemy.text(
-                f"SELECT 1 FROM cart_items \
-                      WHERE cart_id = {cart_id} \
-                        AND sku = '{item_sku}'"
+                f"INSERT INTO cart_items (cart_id, sku, quantity) \
+                  VALUES({cart_id}, '{item_sku}', {cart_item.quantity}) \
+                  ON CONFLICT(cart_id, sku) \
+                  DO UPDATE SET quantity = {cart_item.quantity}"
             )
-        ).first()
-        if recordExists:
-            connection.execute(
-                sqlalchemy.text(
-                    f"UPDATE cart_items \
-                        SET quantity = {cart_item.quantity}"
-                )
-            )
-        else:
-            connection.execute(
-                sqlalchemy.text(
-                    f"INSERT INTO cart_items (cart_id, sku, quantity) \
-                            VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})"
-                )
-            )
-        print(f"[Log] cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}")
+        )
+        print(
+            f"[Log] cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}"
+        )
     return "OK"
 
 
@@ -190,5 +179,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                     SET gold = gold + {total_price}"
             )
         )
-        print(f"[Log] Cart ID {cart_id} checked out! Payment string: {cart_checkout.payment}, Total payment: {total_price}, Total bought: {total_bottles}")
+        print(
+            f"[Log] Cart ID {cart_id} checked out! Payment string: {cart_checkout.payment}, Total payment: {total_price}, Total bought: {total_bottles}"
+        )
     return {"total_potions_bought": total_bottles, "total_gold_paid": total_price}
