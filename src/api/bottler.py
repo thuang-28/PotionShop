@@ -109,7 +109,7 @@ def get_bottle_plan():
                     SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml,
                            potion_capacity,
                            (
-                               SELECT SUM(quantity) AS total_potions
+                               SELECT COALESCE(SUM(quantity), 0) AS total_potions
                                  FROM potion_inventory
                             )
                     FROM global_inventory
@@ -119,7 +119,7 @@ def get_bottle_plan():
         ).first()
     bottle_plan = []
     ml_tuple = inventory[0:4]
-    total_bottles = inventory.total_potions or 0
+    total_bottles = inventory.total_potions
     for idx in range(4):
         num_mixable_potions = min(
             int(ml_tuple[idx] / 100),
