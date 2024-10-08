@@ -20,19 +20,15 @@ def get_inventory():
     with db.engine.begin() as connection:
         inventory = connection.execute(
             sqlalchemy.text(
-                "SELECT gold, \
-                    num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml \
-                FROM global_inventory"
-            )
-        ).first()
-        potions = connection.execute(
-            sqlalchemy.text(
-                "SELECT SUM(quantity) AS total_potions \
-                FROM potion_inventory"
+                """
+                SELECT gold, SUM(quantity) AS total_potions,
+                       num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml
+                  FROM global_inventory, potion_inventory
+                """
             )
         ).first()
     return {
-        "number_of_potions": potions.total_potions or 0,
+        "number_of_potions": inventory.total_potions or 0,
         "ml_in_barrels": inventory.total_ml,
         "gold": inventory.gold,
     }
@@ -49,19 +45,16 @@ def get_capacity_plan():
     with db.engine.begin() as connection:
         stats = connection.execute(
             sqlalchemy.text(
-                "SELECT num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml, \
-                        gold, potion_capacity, ml_capacity FROM global_inventory"
+                """
+                SELECT num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml,
+                       SUM(quantity) AS total_bottles,
+                       gold, potion_capacity, ml_capacity
+                  FROM global_inventory, potion_inventory
+                """
             )
         ).first()
-        total_bottles = (
-            connection.execute(
-                sqlalchemy.text("SELECT SUM(quantity) AS total FROM potion_inventory")
-            )
-            .first().total
-            or 0
-        )
     if stats.gold >= 1000:
-        if (stats.potion_capacity - total_bottles) < 10:
+        if (stats.potion_capacity - (stats.total_bottles or 0)) < 10:
             plan["ml_capacity"] = 1
         elif (stats.ml_capacity - stats.total_ml) < 500:
             plan["potion_capacity"] = 1
@@ -84,8 +77,8 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"UPDATE global_inventory \
-                  SET potion_capacity = potion_capacity + {capacity_purchase.potion_capacity}, \
+                f"UPDATE global_inventory
+                  SET potion_capacity = potion_capacity + {capacity_purchase.potion_capacity},
                       ml_capacity = ml_capacity + {capacity_purchase.ml_capacity}"
             )
         )

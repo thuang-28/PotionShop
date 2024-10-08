@@ -29,22 +29,26 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 total_ml[idx] += potion.potion_type[idx] * potion.quantity
             recordExists = connection.execute(
                 sqlalchemy.text(
-                    f"SELECT 1 FROM potion_inventory \
-                      WHERE red = {potion.potion_type[0]} \
-                        AND green = {potion.potion_type[1]} \
-                        AND blue = {potion.potion_type[2]} \
-                        AND dark = {potion.potion_type[3]}"
+                    f"""
+                    SELECT 1 FROM potion_inventory
+                     WHERE red = {potion.potion_type[0]}
+                       AND green = {potion.potion_type[1]}
+                       AND blue = {potion.potion_type[2]}
+                       AND dark = {potion.potion_type[3]}
+                    """
                 )
             ).first()
             if recordExists:
                 connection.execute(
                     sqlalchemy.text(
-                        f"UPDATE potion_inventory \
-                          SET quantity = quantity + {potion.quantity} \
-                          WHERE red = {potion.potion_type[0]} \
-                            AND green = {potion.potion_type[1]} \
-                            AND blue = {potion.potion_type[2]} \
-                            AND dark = {potion.potion_type[3]}"
+                        f"""
+                        UPDATE potion_inventory
+                           SET quantity = quantity + {potion.quantity}
+                         WHERE red = {potion.potion_type[0]}
+                           AND green = {potion.potion_type[1]}
+                           AND blue = {potion.potion_type[2]}
+                           AND dark = {potion.potion_type[3]}
+                        """
                     )
                 )
             else:
@@ -62,19 +66,24 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 )
                 connection.execute(
                     sqlalchemy.text(
-                        f"INSERT INTO potion_inventory (sku, quantity, price, \
-                                                        red, green, blue, dark) \
-                          VALUES ('{sku}', {potion.quantity}, {price}, \
-                                   {potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"
+                        f"""
+                        INSERT INTO potion_inventory (sku, quantity, price,
+                                                      red, green, blue, dark)
+                             VALUES ('{sku}', {potion.quantity}, {price},
+                                      {potion.potion_type[0]}, {potion.potion_type[1]},
+                                      {potion.potion_type[2]}, {potion.potion_type[3]})
+                        """
                     )
                 )
         connection.execute(
             sqlalchemy.text(
-                f"UPDATE global_inventory \
-                    SET num_red_ml = num_red_ml - {total_ml[0]}, \
-                    num_green_ml = num_green_ml - {total_ml[1]}, \
-                    num_blue_ml = num_blue_ml - {total_ml[2]}, \
-                    num_dark_ml = num_dark_ml - {total_ml[3]}"
+                f"""
+                UPDATE global_inventory
+                   SET num_red_ml = num_red_ml - {total_ml[0]},
+                       num_green_ml = num_green_ml - {total_ml[1]},
+                       num_blue_ml = num_blue_ml - {total_ml[2]},
+                       num_dark_ml = num_dark_ml - {total_ml[3]}
+                """
             )
         )
     print(f"[Log] Potions delivered: {potions_delivered} Order Id: {order_id}")
@@ -96,17 +105,20 @@ def get_bottle_plan():
         inventory = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT potion_capacity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
-                     FROM global_inventory"
+                    """
+                    SELECT potion_capacity,
+                           num_red_ml, num_green_ml, num_blue_ml, num_dark_ml
+                    FROM global_inventory
+                    """
                 )
             )
         ).first()
         total_bottles = (
             connection.execute(
-                sqlalchemy.text("SELECT SUM(quantity) AS total FROM potion_inventory")
+                sqlalchemy.text("""SELECT SUM(quantity) AS total
+                                     FROM potion_inventory""")
             )
-            .first()
-            .total
+            .first().total
             or 0
         )
     bottle_plan = []

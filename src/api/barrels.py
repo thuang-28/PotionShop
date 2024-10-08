@@ -35,12 +35,14 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"UPDATE global_inventory \
-                    SET num_red_ml = num_red_ml + {total_ml[0]}, \
-                    num_green_ml = num_green_ml + {total_ml[1]}, \
-                    num_blue_ml = num_blue_ml + {total_ml[2]}, \
-                    num_dark_ml = num_dark_ml + {total_ml[3]}, \
-                    gold = gold - {total_price}"
+                f"""
+                UPDATE global_inventory
+                   SET num_red_ml = num_red_ml + {total_ml[0]},
+                       num_green_ml = num_green_ml + {total_ml[1]},
+                       num_blue_ml = num_blue_ml + {total_ml[2]},
+                       num_dark_ml = num_dark_ml + {total_ml[3]},
+                       gold = gold - {total_price}
+                """
             )
         )
     print(f"barrels delivered: {barrels_delivered} order_id: {order_id}")
@@ -70,27 +72,24 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         stats = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT gold, ml_capacity, \
-                            num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_barrel_ml \
-                     FROM global_inventory"
+                    """
+                    SELECT gold,
+                           ml_capacity,
+                           num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_barrel_ml
+                    FROM global_inventory
+                    """
                 )
             )
         ).first()
         total_inventory_ml = connection.execute(
             sqlalchemy.text(
-                "SELECT SUM(r), SUM(g), SUM(b), SUM(d) \
-                 FROM ( \
-                    SELECT num_red_ml AS r, \
-                        num_green_ml AS g, \
-                        num_blue_ml AS b, \
-                        num_dark_ml AS d \
-                    FROM global_inventory UNION ALL \
-                        SELECT red * quantity AS r, \
-                            green * quantity AS g, \
-                            blue * quantity AS b, \
-                            dark * quantity AS d \
-                    FROM potion_inventory WHERE quantity > 0 \
-                ) AS mls"
+                """
+                SELECT SUM(num_red_ml + (red * quantity)) AS r,
+                       SUM(num_green_ml + (green * quantity)) AS g,
+                       SUM(num_blue_ml + (blue * quantity)) AS b,
+                       SUM(num_dark_ml + (dark * quantity)) AS d
+                FROM global_inventory, potion_inventory
+                """
             )
         ).first()
     purchase_plan = []

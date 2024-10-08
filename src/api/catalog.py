@@ -16,17 +16,20 @@ def get_catalog():
         potions = (
             connection.execute(
                 sqlalchemy.text(
-                    "SELECT sku, quantity, price, red, green, blue, dark \
-                     FROM potion_inventory \
-                     WHERE quantity > 0 \
-                     LIMIT 6"
+                    """
+                    SELECT sku, quantity, price,
+                           red, green, blue, dark
+                      FROM potion_inventory
+                     WHERE quantity > 0
+                     LIMIT 6
+                    """
                 )
             )
             .mappings()
             .fetchall()
         )
     for potion in potions:
-        name = re.sub(r"([0-9]{1,3})([A-Z])_", r"\g<1> \g<2>, ", potion["sku"]).replace(
+        name = re.sub(r"([0-9]{1,3})([A-Z])_", r"\g<1>g<2>, ", potion["sku"]).replace(
             ", POTION", " Potion"
         )
         catalog.append(

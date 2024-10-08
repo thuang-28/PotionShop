@@ -96,24 +96,26 @@ def create_cart(new_cart: Customer):
         customer_id = (
             connection.execute(
                 sqlalchemy.text(
-                    f"INSERT INTO customers (name, class, level) \
-                                  VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level}) \
-                      RETURNING customers.id AS id"
+                    f"""
+                    INSERT INTO customers (name, class, level)
+                         VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level})
+                      RETURNING customers.id AS id
+                    """
                 )
             )
-            .first()
-            .id
+            .first().id
         )
         cart_id = (
             connection.execute(
                 sqlalchemy.text(
-                    f"INSERT INTO carts (customer_id) \
-                                  VALUES ({customer_id}) \
-                      RETURNING carts.id AS id"
+                    f"""
+                    INSERT INTO carts (customer_id)
+                         VALUES ({customer_id})
+                      RETURNING carts.id AS id
+                    """
                 )
             )
-            .first()
-            .id
+            .first().id
         )
 
     return {"cart_id": cart_id}
@@ -129,10 +131,13 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"INSERT INTO cart_items (cart_id, sku, quantity) \
-                  VALUES({cart_id}, '{item_sku}', {cart_item.quantity}) \
-                  ON CONFLICT(cart_id, sku) \
-                  DO UPDATE SET quantity = {cart_item.quantity}"
+                f"""
+                INSERT INTO cart_items (cart_id, sku, quantity)
+                     VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})
+                ON CONFLICT (cart_id, sku)
+                  DO UPDATE
+                        SET quantity = {cart_item.quantity}
+              """
             )
         )
         print(
@@ -154,10 +159,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         cart_items = (
             connection.execute(
                 sqlalchemy.text(
-                    f"SELECT cart_items.sku, cart_items.quantity, potion_inventory.price \
-                      FROM cart_items \
-                      JOIN potion_inventory ON cart_items.sku = potion_inventory.sku \
-                      WHERE cart_id = {cart_id}"
+                    f"""
+                    SELECT cart_items.sku, cart_items.quantity, potion_inventory.price
+                      FROM cart_items
+                      JOIN potion_inventory ON cart_items.sku = potion_inventory.sku
+                     WHERE cart_id = {cart_id}
+                    """
                 )
             )
             .mappings()
@@ -168,15 +175,19 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             total_price += item["quantity"] * item["price"]
             connection.execute(
                 sqlalchemy.text(
-                    f"UPDATE potion_inventory \
-                    SET quantity = quantity - {item['quantity']} \
-                    WHERE sku = '{item['sku']}'"
+                    f"""
+                    UPDATE potion_inventory
+                       SET quantity = quantity - {item["quantity"]}
+                     WHERE sku = '{item["sku"]}'
+                    """
                 )
             )
         connection.execute(
             sqlalchemy.text(
-                f"UPDATE global_inventory \
-                    SET gold = gold + {total_price}"
+                f"""
+                UPDATE global_inventory
+                   SET gold = gold + {total_price}
+                """
             )
         )
         print(

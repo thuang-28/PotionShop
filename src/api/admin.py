@@ -20,13 +20,20 @@ def reset():
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                "UPDATE global_inventory \
-                    SET num_red_ml = 0, num_green_ml = 0, num_blue_ml = 0, num_dark_ml = 0, \
-                        gold = 100, potion_capacity = 1, ml_capacity = 1; \
-                 DELETE FROM cart_items; \
-                 DELETE FROM carts; \
-                 DELETE FROM customers; \
-                 DELETE FROM potion_inventory;"
+                """
+                UPDATE global_inventory
+                   SET num_red_ml = 0,
+                       num_green_ml = 0,
+                       num_blue_ml = 0,
+                       num_dark_ml = 0,
+                       gold = 100,
+                       potion_capacity = 1,
+                       ml_capacity = 1;
+                DELETE FROM cart_items;
+                DELETE FROM carts;
+                DELETE FROM customers;
+                DELETE FROM potion_inventory;
+                """
             )
         )
     print("[Log] Game state has been reset.")
