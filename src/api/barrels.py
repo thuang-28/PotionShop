@@ -71,14 +71,31 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         total_inventory_ml = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT SUM(num_red_ml + (red * quantity)) AS r,
-                       SUM(num_green_ml + (green * quantity)) AS g,
-                       SUM(num_blue_ml + (blue * quantity)) AS b,
-                       SUM(num_dark_ml + (dark * quantity)) AS d
-                FROM global_inventory, potion_inventory
+                SELECT SUM(num_red_ml) +
+                         (
+                             SELECT COALESCE(SUM(red * quantity), 0)
+                               FROM potion_inventory
+                         ) AS r,
+                       SUM(num_green_ml) +
+                         (
+                             SELECT COALESCE(SUM(green * quantity), 0)
+                               FROM potion_inventory
+                         ) AS g,
+                       SUM(num_blue_ml) +
+                         (
+                             SELECT COALESCE(SUM(blue * quantity), 0)
+                               FROM potion_inventory
+                         ) AS b,
+                       SUM(num_dark_ml) +
+                         (
+                             SELECT COALESCE(SUM(dark * quantity), 0)
+                               FROM potion_inventory
+                         ) AS d
+                FROM global_inventory
                 """
             )
         ).first()
+        print(total_inventory_ml)
     purchase_plan = []
     priority_idx = total_inventory_ml.index(min(total_inventory_ml))
     barrel = max(
