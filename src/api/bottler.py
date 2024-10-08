@@ -106,23 +106,17 @@ def get_bottle_plan():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT potion_capacity,
-                           num_red_ml, num_green_ml, num_blue_ml, num_dark_ml
-                    FROM global_inventory
+                    SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml,
+                           potion_capacity,
+                           SUM(quantity) AS total_potions
+                    FROM global_inventory, potion_inventory
                     """
                 )
             )
         ).first()
-        total_bottles = (
-            connection.execute(
-                sqlalchemy.text("""SELECT SUM(quantity) AS total
-                                     FROM potion_inventory""")
-            )
-            .first().total
-            or 0
-        )
     bottle_plan = []
-    ml_tuple = inventory[1:]
+    ml_tuple = inventory[0:4]
+    total_bottles = inventory.total_potions or 0
     for idx in range(4):
         num_mixable_potions = min(
             int(ml_tuple[idx] / 100),
