@@ -95,7 +95,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 """
             )
         ).first()
-        print(total_inventory_ml)
     purchase_plan = []
     priority_idx = total_inventory_ml.index(min(total_inventory_ml))
     barrel = max(
