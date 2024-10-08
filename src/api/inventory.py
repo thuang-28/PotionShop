@@ -52,7 +52,7 @@ def get_capacity_plan():
                 """
                 SELECT num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml,
                        (
-                            SELECT COALESCE(SUM(quantity), 0) AS total_bottles
+                            SELECT COALESCE(SUM(quantity), 0) AS total_potions
                               FROM potion_inventory
                         ),
                        gold, potion_capacity, ml_capacity
@@ -61,7 +61,7 @@ def get_capacity_plan():
             )
         ).first()
     if stats.gold >= 1000:
-        if (stats.potion_capacity - stats.total_bottles) < 10:
+        if (stats.potion_capacity - stats.total_potions) < 10:
             plan["ml_capacity"] = 1
         elif (stats.ml_capacity - stats.total_ml) < 500:
             plan["potion_capacity"] = 1
