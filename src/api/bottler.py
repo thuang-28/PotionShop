@@ -23,58 +23,36 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
     with db.engine.begin() as connection:
-        total_ml = [0, 0, 0, 0]
         for potion in potions_delivered:
-            for idx in range(len(total_ml)):
-                total_ml[idx] += potion.potion_type[idx] * potion.quantity
-            recordExists = connection.execute(
+            sku = ""
+            colors = ("R", "G", "B", "D")
+            for i in range(4):
+                if potion.potion_type[i] > 0:
+                    sku += str(potion.potion_type[i]) + colors[i]
+            sku += "_POTION"
+            price = int(
+                potion.potion_type[0] * 0.5
+                + potion.potion_type[1] * 0.45
+                + potion.potion_type[2] * 0.55
+                + potion.potion_type[3] * 0.75
+            )
+            connection.execute(
                 sqlalchemy.text(
                     f"""
-                    SELECT 1 FROM potion_inventory
-                     WHERE red = {potion.potion_type[0]}
-                       AND green = {potion.potion_type[1]}
-                       AND blue = {potion.potion_type[2]}
-                       AND dark = {potion.potion_type[3]}
+                    INSERT INTO potion_inventory (sku, quantity, price,
+                                                  red, green, blue, dark)
+                         VALUES ('{sku}', {potion.quantity}, {price},
+                                {potion.potion_type[0]}, {potion.potion_type[1]},
+                                {potion.potion_type[2]}, {potion.potion_type[3]})
+                    ON CONFLICT (sku)
+                      DO UPDATE
+                            SET quantity + {potion.quantity}
                     """
                 )
-            ).first()
-            if recordExists:
-                connection.execute(
-                    sqlalchemy.text(
-                        f"""
-                        UPDATE potion_inventory
-                           SET quantity = quantity + {potion.quantity}
-                         WHERE red = {potion.potion_type[0]}
-                           AND green = {potion.potion_type[1]}
-                           AND blue = {potion.potion_type[2]}
-                           AND dark = {potion.potion_type[3]}
-                        """
-                    )
-                )
-            else:
-                sku = ""
-                colors = ("R", "G", "B", "D")
-                for i in range(4):
-                    if potion.potion_type[i] > 0:
-                        sku += str(potion.potion_type[i]) + colors[i]
-                sku += "_POTION"
-                price = int(
-                    potion.potion_type[0] * 0.55
-                    + potion.potion_type[1] * 0.5
-                    + potion.potion_type[2] * 0.6
-                    + potion.potion_type[3] * 0.8
-                )
-                connection.execute(
-                    sqlalchemy.text(
-                        f"""
-                        INSERT INTO potion_inventory (sku, quantity, price,
-                                                      red, green, blue, dark)
-                             VALUES ('{sku}', {potion.quantity}, {price},
-                                      {potion.potion_type[0]}, {potion.potion_type[1]},
-                                      {potion.potion_type[2]}, {potion.potion_type[3]})
-                        """
-                    )
-                )
+            )
+        total_ml = [
+            sum(potion.potion_type[i] for potion in potions_delivered) for i in range(4)
+        ]
         connection.execute(
             sqlalchemy.text(
                 f"""
