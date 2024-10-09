@@ -88,5 +88,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         purchase_plan.append({"sku": barrel.sku, "quantity": 1})
         total_price += barrel.price
         total_ml += barrel.ml_per_barrel
+        wholesale_catalog.remove(barrel)
     print(f"[Log] Purchase Plan: {purchase_plan}")
     return purchase_plan
