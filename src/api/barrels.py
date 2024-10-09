@@ -68,47 +68,25 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 )
             )
         ).first()
-        total_inventory_ml = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT SUM(num_red_ml) +
-                         (
-                             SELECT COALESCE(SUM(red * quantity), 0)
-                               FROM potion_inventory
-                         ) AS r,
-                       SUM(num_green_ml) +
-                         (
-                             SELECT COALESCE(SUM(green * quantity), 0)
-                               FROM potion_inventory
-                         ) AS g,
-                       SUM(num_blue_ml) +
-                         (
-                             SELECT COALESCE(SUM(blue * quantity), 0)
-                               FROM potion_inventory
-                         ) AS b,
-                       SUM(num_dark_ml) +
-                         (
-                             SELECT COALESCE(SUM(dark * quantity), 0)
-                               FROM potion_inventory
-                         ) AS d
-                FROM global_inventory
-                """
-            )
-        ).first()
     purchase_plan = []
-    priority_idx = total_inventory_ml.index(min(total_inventory_ml))
-    barrel = max(
-        [
-            item
-            for item in wholesale_catalog
-            if item.potion_type[priority_idx] == 1
-            and stats.gold >= item.price
-            and stats.ml_capacity * 10000 >= stats.total_barrel_ml + item.ml_per_barrel
-        ],
-        key=lambda b: b.ml_per_barrel,
-        default=None,
-    )
-    if barrel:
+    total_price = 0
+    total_ml = stats.total_barrel_ml
+    while True:
+        barrel = min(
+            [
+                item
+                for item in wholesale_catalog
+                if item.quantity > 0
+                and stats.gold >= total_price + item.price
+                and stats.ml_capacity * 10000 >= total_ml + item.ml_per_barrel
+            ],
+            key=lambda b: b.price,
+            default=None,
+        )
+        if not barrel:
+            break
         purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+        total_price += barrel.price
+        total_ml += barrel.ml_per_barrel
     print(f"[Log] Purchase Plan: {purchase_plan}")
     return purchase_plan
