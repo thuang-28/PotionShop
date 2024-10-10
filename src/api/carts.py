@@ -103,7 +103,8 @@ def create_cart(new_cart: Customer):
                     """
                 )
             )
-            .first().id
+            .first()
+            .id
         )
         cart_id = (
             connection.execute(
@@ -115,7 +116,8 @@ def create_cart(new_cart: Customer):
                     """
                 )
             )
-            .first().id
+            .first()
+            .id
         )
 
     return {"cart_id": cart_id}
@@ -154,43 +156,34 @@ class CartCheckout(BaseModel):
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     with db.engine.begin() as connection:
-        total_bottles = 0
-        total_price = 0
-        cart_items = (
-            connection.execute(
-                sqlalchemy.text(
-                    f"""
-                    SELECT cart_items.sku, cart_items.quantity, potion_inventory.price
-                      FROM cart_items
-                      JOIN potion_inventory ON cart_items.sku = potion_inventory.sku
-                     WHERE cart_id = {cart_id}
-                    """
-                )
-            )
-            .mappings()
-            .fetchall()
-        )
-        for item in cart_items:
-            total_bottles += item["quantity"]
-            total_price += item["quantity"] * item["price"]
-            connection.execute(
-                sqlalchemy.text(
-                    f"""
-                    UPDATE potion_inventory
-                       SET quantity = quantity - {item["quantity"]}
-                     WHERE sku = '{item["sku"]}'
-                    """
-                )
-            )
+        cart_totals = connection.execute(
+            sqlalchemy.text(
+                f"""
+                SELECT SUM(price * cart_items.quantity) AS total_price,
+                       SUM(cart_items.quantity) AS total_potions
+                  FROM potion_inventory
+                  JOIN cart_items ON potion_inventory.sku = cart_items.sku
+                   AND cart_id = :cart_id
+                """
+            ),
+            {"cart_id": cart_id},
+        ).one()
         connection.execute(
             sqlalchemy.text(
                 f"""
+                UPDATE potion_inventory
+                   SET potion_inventory.quantity = potion_inventory.quantity - cart_items.quantity
+                 WHERE potion_inventory.sku = cart_items.sku and cart_id = :cart_id;
                 UPDATE global_inventory
-                   SET gold = gold + {total_price}
+                   SET gold = gold + :total_price
                 """
-            )
+            ),
+            {"cart_id": cart_id, "total_price": cart_totals.total_price},
         )
         print(
-            f"[Log] Cart ID {cart_id} checked out! Payment string: {cart_checkout.payment}, Total payment: {total_price}, Total bought: {total_bottles}"
+            f"[Log] Cart ID {cart_id} checked out! Payment: {cart_checkout.payment}, Total payment: {cart_totals.total_price}, Total bought: {cart_totals.total_potions}"
         )
-    return {"total_potions_bought": total_bottles, "total_gold_paid": total_price}
+    return {
+        "total_potions_bought": cart_totals.total_potions,
+        "total_gold_paid": cart_totals.total_price,
+    }
