@@ -89,14 +89,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 and stats.gold >= total_price + item.price
                 and stats.ml_capacity * 10000 >= total_ml + item.ml_per_barrel
             ],
-            key=lambda b: b.price,
+            key=lambda b: (
+                (-1 / b.price) if b.potion_type[3] > 0 else b.price
+            ),  # prioritize buying dark barrels over cheap barrels
             default=None,
         )
         if not barrel:
             break
-        purchase_plan.append({"sku": barrel.sku, "quantity": 1})
         total_price += barrel.price
         total_ml += barrel.ml_per_barrel
+        purchase_plan.append({"sku": barrel.sku, "quantity": 1})
         wholesale_catalog.remove(barrel)
     print(f"[Log] Purchase Plan: {purchase_plan}")
     return purchase_plan
