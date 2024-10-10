@@ -61,9 +61,9 @@ def get_capacity_plan():
             )
         ).first()
     if stats.gold >= 1000:
-        if (stats.potion_capacity - stats.total_potions) < 10:
+        if (stats.potion_capacity * 50 - stats.total_potions) < 10:
             plan["ml_capacity"] = 1
-        elif (stats.ml_capacity - stats.total_ml) < 500:
+        elif (stats.ml_capacity * 10000 - stats.total_ml) < 500:
             plan["potion_capacity"] = 1
     print(f"[Log] Capacity purchase plan: {plan}")
     return plan
@@ -86,10 +86,16 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
             sqlalchemy.text(
                 f"""
                 UPDATE global_inventory
-                   SET potion_capacity = potion_capacity + {capacity_purchase.potion_capacity},
-                       ml_capacity = ml_capacity + {capacity_purchase.ml_capacity}
+                   SET potion_capacity = potion_capacity + :new_pot_units,
+                       ml_capacity = ml_capacity + :new_ml_units
                 """
-            )
+            ),
+            {
+                "new_pot_units": capacity_purchase.potion_capacity,
+                "new_ml_units": capacity_purchase.ml_capacity,
+            },
         )
-        print(f"[Log] Capacity delivered: Potion {capacity_purchase.potion_capacity}, ML {capacity_purchase.ml_capacity}, order id: {order_id}")
+        print(
+            f"[Log] Capacity delivered: Potion {capacity_purchase.potion_capacity}, ML {capacity_purchase.ml_capacity}, order id: {order_id}"
+        )
     return "OK"
