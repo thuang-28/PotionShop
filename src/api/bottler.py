@@ -46,7 +46,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                 {potion.potion_type[2]}, {potion.potion_type[3]})
                     ON CONFLICT (sku)
                       DO UPDATE
-                            SET potion_inventory.quantity = potion_inventory.quantity + {potion.quantity}
+                            SET quantity = potion_inventory.quantity + {potion.quantity}
                     """
                 )
             )
