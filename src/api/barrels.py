@@ -37,7 +37,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"""
+                """
                 UPDATE global_inventory
                    SET num_red_ml = num_red_ml + :new_red,
                        num_green_ml = num_green_ml + :new_green,

@@ -38,33 +38,41 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             )
             connection.execute(
                 sqlalchemy.text(
-                    f"""
+                    """
                     INSERT INTO potion_inventory (sku, quantity, price,
                                                   red, green, blue, dark)
-                         VALUES ('{sku}', {potion.quantity}, {price},
-                                {potion.potion_type[0]}, {potion.potion_type[1]},
-                                {potion.potion_type[2]}, {potion.potion_type[3]})
+                         VALUES (:sku, :quantity, :price,
+                                 :red, :green, :blue, :dark)
                     ON CONFLICT (sku)
                       DO UPDATE
-                            SET quantity = potion_inventory.quantity + {potion.quantity}
+                            SET quantity = potion_inventory.quantity + :quantity
                     """
-                )
+                ),
+                {
+                    "sku": sku,
+                    "quantity": potion.quantity,
+                    "price": price,
+                    "red": potion.potion_type[0],
+                    "green": potion.potion_type[1],
+                    "blue": potion.potion_type[2],
+                    "dark": potion.potion_type[3],
+                },
             )
         total_ml = [
             sum(potion.potion_type[i] * potion.quantity for potion in potions_delivered)
             for i in range(4)
         ]
-        print(total_ml)
         connection.execute(
             sqlalchemy.text(
-                f"""
-                UPDATE global_inventory
-                   SET num_red_ml = num_red_ml - {total_ml[0]},
-                       num_green_ml = num_green_ml - {total_ml[1]},
-                       num_blue_ml = num_blue_ml - {total_ml[2]},
-                       num_dark_ml = num_dark_ml - {total_ml[3]}
                 """
-            )
+                UPDATE global_inventory
+                   SET num_red_ml = num_red_ml - :r,
+                       num_green_ml = num_green_ml - :g,
+                       num_blue_ml = num_blue_ml - :b,
+                       num_dark_ml = num_dark_ml - :d
+                """
+            ),
+            {"r": total_ml[0], "g": total_ml[1], "b": total_ml[2], "d": total_ml[3]},
         )
     print(f"[Log] Potions delivered: {potions_delivered} Order Id: {order_id}")
     return "OK"

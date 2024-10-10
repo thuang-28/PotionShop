@@ -93,32 +93,30 @@ def post_visits(visit_id: int, customers: list[Customer]):
 def create_cart(new_cart: Customer):
     """ """
     with db.engine.begin() as connection:
-        customer_id = (
-            connection.execute(
-                sqlalchemy.text(
-                    f"""
+        customer_id = connection.execute(
+            sqlalchemy.text(
+                """
                     INSERT INTO customers (name, class, level)
-                         VALUES ('{new_cart.customer_name}', '{new_cart.character_class}', {new_cart.level})
-                      RETURNING customers.id AS id
+                         VALUES (:name, :class, :level)
+                      RETURNING customers.id
                     """
-                )
-            )
-            .first()
-            .id
-        )
-        cart_id = (
-            connection.execute(
-                sqlalchemy.text(
-                    f"""
+            ),
+            {
+                "name": new_cart.customer_name,
+                "class": new_cart.character_class,
+                "level": new_cart.level,
+            },
+        ).scalar_one()
+        cart_id = connection.execute(
+            sqlalchemy.text(
+                """
                     INSERT INTO carts (customer_id)
-                         VALUES ({customer_id})
-                      RETURNING carts.id AS id
-                    """
-                )
-            )
-            .first()
-            .id
-        )
+                         VALUES (:customer_id)
+                      RETURNING carts.id
+                """
+            ),
+            {"customer_id": customer_id},
+        ).scalar_one()
 
     return {"cart_id": cart_id}
 
@@ -133,14 +131,15 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"""
+                """
                 INSERT INTO cart_items (cart_id, sku, quantity)
-                     VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})
+                     VALUES (:id, :sku, :quantity)
                 ON CONFLICT (cart_id, sku)
                   DO UPDATE
-                        SET quantity = {cart_item.quantity}
-              """
-            )
+                        SET quantity = :quantity
+                """
+            ),
+            {"id": cart_id, "sku": item_sku, "quantity": cart_item.quantity}
         )
         print(
             f"[Log] cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}"
@@ -158,7 +157,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
         cart_totals = connection.execute(
             sqlalchemy.text(
-                f"""
+                """
                 SELECT SUM(price * cart_items.quantity) AS total_price,
                        SUM(cart_items.quantity) AS total_potions
                   FROM potion_inventory
@@ -170,7 +169,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         ).one()
         connection.execute(
             sqlalchemy.text(
-                f"""
+                """
                 UPDATE potion_inventory
                    SET potion_inventory.quantity = potion_inventory.quantity - cart_items.quantity
                  WHERE potion_inventory.sku = cart_items.sku and cart_id = :cart_id;
