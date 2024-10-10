@@ -25,25 +25,34 @@ class Barrel(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
-    total_ml = [0, 0, 0, 0]
-    total_price = 0
-    for barrel in barrels_delivered:
-        color_idx = barrel.potion_type.index(1)
-        total_ml[color_idx] += barrel.ml_per_barrel * barrel.quantity
-        total_price += barrel.price * barrel.quantity
+    total_ml = [
+        sum(
+            barrel.potion_type[i] * barrel.quantity * barrel.ml_per_barrel
+            for barrel in barrels_delivered
+        )
+        for i in range(4)
+    ]
+    total_price = sum(barrel.price * barrel.quantity for barrel in barrels_delivered)
 
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
                 f"""
                 UPDATE global_inventory
-                   SET num_red_ml = num_red_ml + {total_ml[0]},
-                       num_green_ml = num_green_ml + {total_ml[1]},
-                       num_blue_ml = num_blue_ml + {total_ml[2]},
-                       num_dark_ml = num_dark_ml + {total_ml[3]},
-                       gold = gold - {total_price}
+                   SET num_red_ml = num_red_ml + :new_red,
+                       num_green_ml = num_green_ml + :new_green,
+                       num_blue_ml = num_blue_ml + :new_blue,
+                       num_dark_ml = num_dark_ml + :new_dark,
+                       gold = gold - :total_price
                 """
-            )
+            ),
+            {
+                "new_red": total_ml[0],
+                "new_green": total_ml[1],
+                "new_blue": total_ml[2],
+                "new_dark": total_ml[3],
+                "total_price": total_price,
+            },
         )
     print(f"barrels delivered: {barrels_delivered} order_id: {order_id}")
     return "OK"
