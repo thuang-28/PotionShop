@@ -51,8 +51,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 )
             )
         total_ml = [
-            sum(potion.potion_type[i] for potion in potions_delivered) for i in range(4)
+            sum(potion.potion_type[i] * potion.quantity for potion in potions_delivered)
+            for i in range(4)
         ]
+        print(total_ml)
         connection.execute(
             sqlalchemy.text(
                 f"""
