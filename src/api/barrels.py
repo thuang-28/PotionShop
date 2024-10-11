@@ -81,7 +81,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     total_price = 0
     total_ml = stats.total_barrel_ml
     while True:
-        barrel = min(
+        barrel = max(
             [
                 item
                 for item in wholesale_catalog
@@ -89,9 +89,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 and stats.gold >= total_price + item.price
                 and stats.ml_capacity * 10000 >= total_ml + item.ml_per_barrel
             ],
-            key=lambda b: (
-                (-1 / b.price) if b.potion_type[3] > 0 else b.price
-            ),  # prioritize buying dark barrels over cheap barrels
+            key=lambda b: b.ml_per_barrel,
             default=None,
         )
         if not barrel:
