@@ -171,8 +171,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             sqlalchemy.text(
                 """
                 UPDATE potion_inventory
-                   SET potion_inventory.quantity = potion_inventory.quantity - cart_items.quantity
-                 WHERE potion_inventory.sku = cart_items.sku and cart_id = :cart_id;
+                   SET quantity = potion_inventory.quantity - cart_items.quantity
+                  FROM cart_items
+                 WHERE potion_inventory.sku = cart_items.sku AND cart_id = :cart_id;
                 UPDATE global_inventory
                    SET gold = gold + :total_price
                 """
