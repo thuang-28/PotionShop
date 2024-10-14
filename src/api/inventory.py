@@ -87,7 +87,8 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
                 f"""
                 UPDATE global_inventory
                    SET potion_capacity = potion_capacity + :new_pot_units,
-                       ml_capacity = ml_capacity + :new_ml_units
+                       ml_capacity = ml_capacity + :new_ml_units,
+                       gold = gold - ((:new_pot_units + :new_ml_units) * 1000)
                 """
             ),
             {
