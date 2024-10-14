@@ -31,11 +31,13 @@ def get_inventory():
                 """
             )
         ).first()
-    return {
-        "number_of_potions": inventory.total_potions,
-        "ml_in_barrels": inventory.total_ml,
-        "gold": inventory.gold,
-    }
+        audit = {
+            "number_of_potions": inventory.total_potions,
+            "ml_in_barrels": inventory.total_ml,
+            "gold": inventory.gold,
+        }
+        print("[Log] Audit:", audit)
+    return audit
 
 
 # Gets called once a day
@@ -61,11 +63,15 @@ def get_capacity_plan():
             )
         ).first()
     if stats.gold >= 1000:
-        if (stats.potion_capacity * 50 - stats.total_potions) < 10:
+        if (stats.potion_capacity * 50 - stats.total_potions) < (
+            stats.potion_capacity * 10
+        ):
             plan["potion_capacity"] = 1
-        if stats.gold >= 2000 and (stats.ml_capacity * 10000 - stats.total_ml) < 1000:
+        if stats.gold >= 2000 and (stats.ml_capacity * 10000 - stats.total_ml) < (
+            stats.ml_capacity * 1000
+        ):
             plan["ml_capacity"] = 1
-    print(f"[Log] Capacity purchase plan: {plan}")
+    print("[Log] Capacity purchase plan:", plan)
     return plan
 
 
@@ -84,7 +90,7 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                f"""
+                """
                 UPDATE global_inventory
                    SET potion_capacity = potion_capacity + :new_pot_units,
                        ml_capacity = ml_capacity + :new_ml_units,
@@ -96,7 +102,5 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
                 "new_ml_units": capacity_purchase.ml_capacity,
             },
         )
-        print(
-            f"[Log] Capacity delivered: Potion {capacity_purchase.potion_capacity}, ML {capacity_purchase.ml_capacity}, order id: {order_id}"
-        )
+        print(f"[Log] Capacity delivered (ID {order_id}):", capacity_purchase)
     return "OK"
