@@ -54,7 +54,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                 "total_price": total_price,
             },
         )
-    print(f"barrels delivered: {barrels_delivered} order_id: {order_id}")
+    print(f"[Log] Barrels delivered (ID {order_id}):", barrels_delivered)
     return "OK"
 
 
@@ -98,5 +98,5 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         total_ml += barrel.ml_per_barrel
         purchase_plan.append({"sku": barrel.sku, "quantity": 1})
         wholesale_catalog.remove(barrel)
-    print(f"[Log] Purchase Plan: {purchase_plan}")
+    print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan

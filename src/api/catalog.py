@@ -46,5 +46,5 @@ def get_catalog():
                 ],
             }
         )
-        print(f"[Log] Available Catalog: {catalog}")
+    print("[Log] Available Catalog:", catalog)
     return catalog

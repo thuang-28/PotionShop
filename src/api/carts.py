@@ -117,7 +117,7 @@ def create_cart(new_cart: Customer):
             ),
             {"customer_id": customer_id},
         ).scalar_one()
-
+    print(f"[Log] New cart created (ID {cart_id}) for", new_cart)
     return {"cart_id": cart_id}
 
 
@@ -139,10 +139,10 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
                         SET quantity = :quantity
                 """
             ),
-            {"id": cart_id, "sku": item_sku, "quantity": cart_item.quantity}
+            {"id": cart_id, "sku": item_sku, "quantity": cart_item.quantity},
         )
         print(
-            f"[Log] cart id: {cart_id}, sku: {item_sku}, quantity: {cart_item.quantity}"
+            f"[Log] Cart item updated (ID {cart_id}): {item_sku} (x{cart_item.quantity})"
         )
     return "OK"
 
@@ -180,10 +180,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             ),
             {"cart_id": cart_id, "total_price": cart_totals.total_price},
         )
-        print(
-            f"[Log] Cart ID {cart_id} checked out! Payment: {cart_checkout.payment}, Total payment: {cart_totals.total_price}, Total bought: {cart_totals.total_potions}"
-        )
-    return {
+    checkout = {
         "total_potions_bought": cart_totals.total_potions,
         "total_gold_paid": cart_totals.total_price,
     }
+    print(
+        f"[Log] Checked out (Cart ID {cart_id}) w/ payment method '{cart_checkout.payment}':",
+        checkout,
+    )
+    return checkout
