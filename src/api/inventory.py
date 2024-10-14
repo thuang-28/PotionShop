@@ -63,7 +63,7 @@ def get_capacity_plan():
     if stats.gold >= 1000:
         if (stats.potion_capacity * 50 - stats.total_potions) < 10:
             plan["potion_capacity"] = 1
-        elif (stats.ml_capacity * 10000 - stats.total_ml) < 500:
+        if stats.gold >= 2000 and (stats.ml_capacity * 10000 - stats.total_ml) < 1000:
             plan["ml_capacity"] = 1
     print(f"[Log] Capacity purchase plan: {plan}")
     return plan
