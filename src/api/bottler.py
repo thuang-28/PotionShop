@@ -30,7 +30,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 if potion.potion_type[i] > 0:
                     sku += str(potion.potion_type[i]) + colors[i]
             sku += "_POTION"
-            price = int(
+            base_price = int(
                 potion.potion_type[0] * 0.5
                 + potion.potion_type[1] * 0.5
                 + potion.potion_type[2] * 0.55
@@ -45,14 +45,13 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                  :red, :green, :blue, :dark)
                     ON CONFLICT (sku)
                       DO UPDATE
-                            SET quantity = potion_inventory.quantity + :quantity,
-                                price = FLOOR(price * 0.995^:quantity)::int4
+                            SET quantity = potion_inventory.quantity + :quantity
                     """
                 ),
                 {
                     "sku": sku,
                     "quantity": potion.quantity,
-                    "price": price,
+                    "price": base_price,
                     "red": potion.potion_type[0],
                     "green": potion.potion_type[1],
                     "blue": potion.potion_type[2],
