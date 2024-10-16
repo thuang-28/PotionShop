@@ -177,7 +177,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                    SET quantity = potion_inventory.quantity - cart_items.quantity
                   FROM cart_items
                  WHERE potion_inventory.sku = cart_items.sku AND cart_id = :cart_id;
-                DELETE FROM potion_inventory WHERE quantity = 0;
                 UPDATE global_inventory
                    SET gold = gold + :total_price
                 """
