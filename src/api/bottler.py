@@ -45,7 +45,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                  :red, :green, :blue, :dark)
                     ON CONFLICT (sku)
                       DO UPDATE
-                            SET quantity = potion_inventory.quantity + :quantity
+                            SET quantity = potion_inventory.quantity + :quantity,
+                                price = FLOOR(price * 0.995^:quantity)::int4
                     """
                 ),
                 {
@@ -108,16 +109,33 @@ def get_bottle_plan():
     bottle_plan = []
     ml_tuple = inventory[0:4]
     total_bottles = inventory.total_potions
+    num_mixable = [0, 0, 0, 0]
     for idx in range(4):
-        num_mixable_potions = min(
-            int(ml_tuple[idx] / 100),
-            inventory.potion_capacity * 50 - total_bottles,
+        num_pure_potions = min(
+            int(ml_tuple[idx] / 200), inventory.potion_capacity - total_bottles
         )
-        total_bottles += num_mixable_potions
-        if num_mixable_potions > 0:
+        if num_pure_potions > 0:
+            total_bottles += num_pure_potions
+            ml_tuple[idx] = ml_tuple[idx] - (num_pure_potions * 100)
             type = [0, 0, 0, 0]
             type[idx] = 100
-            bottle_plan.append({"potion_type": type, "quantity": num_mixable_potions})
+            bottle_plan.append({"potion_type": type, "quantity": num_pure_potions})
+        num_mixable[idx] = int(ml_tuple[idx] / 150)
+    for i, j in [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (1, 3)]:
+        if ml_tuple[i] >= 50 and ml_tuple[j] >= 50:
+            num_mixed_potions = min(
+                num_mixable[i],
+                num_mixable[j],
+                inventory.potion_capacity - total_bottles,
+            )
+            if num_mixed_potions > 0:
+                total_bottles += num_mixed_potions
+                ml_tuple[i] = ml_tuple[i] - (num_mixed_potions * 50)
+                ml_tuple[j] = ml_tuple[j] - (num_mixed_potions * 50)
+                type = [0, 0, 0, 0]
+                type[i] = 50
+                type[j] = 50
+                bottle_plan.append({"potion_type": type, "quantity": num_mixed_potions})
     print(f"[Log] Bottle Plan: {bottle_plan}")
     return bottle_plan
 
