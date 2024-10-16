@@ -159,7 +159,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             sqlalchemy.text(
                 """
                 SELECT SUM(
-                            FLOOR(price * 0.995^potion_inventory.quantity)::int
+                            FLOOR(price * 0.995^potion_inventory.quantity)::int4
                             * cart_items.quantity
                         ) AS total_price,
                        SUM(cart_items.quantity) AS total_potions

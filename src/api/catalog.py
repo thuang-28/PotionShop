@@ -18,7 +18,7 @@ def get_catalog():
                 sqlalchemy.text(
                     """
                     SELECT sku, quantity,
-                           FLOOR(price * 0.995^quantity)::int AS mod_price,
+                           FLOOR(price * 0.995^quantity)::int4 AS mod_price,
                            red, green, blue, dark
                       FROM potion_inventory
                      WHERE quantity > 0
