@@ -46,7 +46,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     ON CONFLICT (sku)
                       DO UPDATE
                             SET quantity = potion_inventory.quantity + :quantity,
-                                price_mult = ((CEILING(quantity / 20) - 1) * -0.1) + 1
+                                price_mult = ((CEILING((potion_inventory.quantity + :quantity) / 20) - 1) * -0.1) + 1
                     """  # at qty <=20, price_mult = 1
                     # for every qty <= 20n afterwards, price_mult = 1 - 0.1n
                 ),
@@ -113,7 +113,7 @@ def get_bottle_plan():
     num_mixable = [0, 0, 0, 0]
     for idx in range(4):
         num_pure_potions = min(
-            int(ml_list[idx] / 200), inventory.potion_capacity - total_bottles
+            int(ml_list[idx] / 200), inventory.potion_capacity * 50 - total_bottles
         )
         if num_pure_potions > 0:
             total_bottles += num_pure_potions
@@ -127,7 +127,7 @@ def get_bottle_plan():
             num_mixed_potions = min(
                 num_mixable[i],
                 num_mixable[j],
-                inventory.potion_capacity - total_bottles,
+                inventory.potion_capacity * 50 - total_bottles,
             )
             if num_mixed_potions > 0:
                 total_bottles += num_mixed_potions
