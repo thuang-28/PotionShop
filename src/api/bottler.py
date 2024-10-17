@@ -108,22 +108,22 @@ def get_bottle_plan():
             )
         ).first()
     bottle_plan = []
-    ml_tuple = inventory[0:4]
+    ml_list = list(inventory[0:4])
     total_bottles = inventory.total_potions
     num_mixable = [0, 0, 0, 0]
     for idx in range(4):
         num_pure_potions = min(
-            int(ml_tuple[idx] / 200), inventory.potion_capacity - total_bottles
+            int(ml_list[idx] / 200), inventory.potion_capacity - total_bottles
         )
         if num_pure_potions > 0:
             total_bottles += num_pure_potions
-            ml_tuple[idx] = ml_tuple[idx] - (num_pure_potions * 100)
+            ml_list[idx] = ml_list[idx] - (num_pure_potions * 100)
             type = [0, 0, 0, 0]
             type[idx] = 100
             bottle_plan.append({"potion_type": type, "quantity": num_pure_potions})
-        num_mixable[idx] = int(ml_tuple[idx] / 150)
+        num_mixable[idx] = int(ml_list[idx] / 150)
     for i, j in [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (1, 3)]:
-        if ml_tuple[i] >= 50 and ml_tuple[j] >= 50:
+        if ml_list[i] >= 50 and ml_list[j] >= 50:
             num_mixed_potions = min(
                 num_mixable[i],
                 num_mixable[j],
@@ -131,8 +131,8 @@ def get_bottle_plan():
             )
             if num_mixed_potions > 0:
                 total_bottles += num_mixed_potions
-                ml_tuple[i] = ml_tuple[i] - (num_mixed_potions * 50)
-                ml_tuple[j] = ml_tuple[j] - (num_mixed_potions * 50)
+                ml_list[i] = ml_list[i] - (num_mixed_potions * 50)
+                ml_list[j] = ml_list[j] - (num_mixed_potions * 50)
                 type = [0, 0, 0, 0]
                 type[i] = 50
                 type[j] = 50
