@@ -17,8 +17,7 @@ def get_catalog():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT sku, quantity,
-                           FLOOR(price * price_mult)::int4 AS mod_price,
+                    SELECT sku, quantity, price
                            red, green, blue, dark
                       FROM potion_inventory
                      WHERE quantity > 0
@@ -38,7 +37,7 @@ def get_catalog():
                 "sku": potion["sku"],
                 "name": name,
                 "quantity": potion["quantity"],
-                "price": potion["mod_price"],
+                "price": potion["price"],
                 "potion_type": [
                     potion["red"],
                     potion["green"],

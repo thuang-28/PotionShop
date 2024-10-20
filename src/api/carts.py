@@ -158,7 +158,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         cart_totals = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT SUM(FLOOR(price * price_mult) * cart_items.quantity) AS total_price,
+                SELECT SUM(price * cart_items.quantity) AS total_price,
                        SUM(cart_items.quantity) AS total_potions
                   FROM potion_inventory
                   JOIN cart_items ON potion_inventory.sku = cart_items.sku

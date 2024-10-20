@@ -45,10 +45,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                  :red, :green, :blue, :dark)
                     ON CONFLICT (sku)
                       DO UPDATE
-                            SET quantity = potion_inventory.quantity + :quantity,
-                                price_mult = ((FLOOR(potion_inventory.quantity / 20)) * -0.1) + 1
-                    """  # at qty < 20, price_mult = 1
-                    # for every qty < 20n afterwards, price_mult = 1 - 0.1n
+                            SET quantity = potion_inventory.quantity + :quantity
+                    """
                 ),
                 {
                     "sku": sku,
