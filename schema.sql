@@ -15,6 +15,7 @@ create table
   public.potion_inventory (
     sku text not null,
     quantity integer not null,
+    price_mult real not null default '1'::real,
     price integer not null,
     red integer not null,
     green integer not null,
