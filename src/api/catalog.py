@@ -17,7 +17,7 @@ def get_catalog():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT sku, quantity, price
+                    SELECT sku, quantity, price,
                            red, green, blue, dark
                       FROM potion_inventory
                      WHERE quantity > 0
