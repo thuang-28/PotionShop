@@ -33,7 +33,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             base_price = int(
                 potion.potion_type[0] * 0.5
                 + potion.potion_type[1] * 0.5
-                + potion.potion_type[2] * 0.55
+                + potion.potion_type[2] * 0.5
                 + potion.potion_type[3] * 0.75
             )
             connection.execute(
