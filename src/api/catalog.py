@@ -21,6 +21,7 @@ def get_catalog():
                            red, green, blue, dark
                       FROM potion_inventory
                      WHERE quantity > 0
+                     ORDER BY quantity DESC
                      LIMIT 6
                     """
                 )
