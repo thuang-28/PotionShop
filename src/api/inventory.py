@@ -52,24 +52,23 @@ def get_capacity_plan():
         stats = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml,
-                       (
+                SELECT gold,
+                       potion_capacity * 50 - (
                             SELECT COALESCE(SUM(quantity), 0) AS total_potions
                               FROM potion_inventory
-                        ),
-                       gold, potion_capacity, ml_capacity
+                        ) AS num_craftable_pot,
+                       potion_capacity * 10 AS potion_buy_threshold,
+                       ml_capacity * 10000 - (num_red_ml + num_green_ml + num_blue_ml + num_dark_ml) AS num_containable_ml,
+                       ml_capacity * 1000 AS ml_buy_threshold
                   FROM global_inventory
                 """
             )
         ).first()
-    if stats.gold >= 1000:
-        if (stats.potion_capacity * 50 - stats.total_potions) < (
-            stats.potion_capacity * 10
-        ):
+        gold = stats.gold
+        if gold >= 1000 and stats.num_craftable_pot < stats.potion_buy_threshold:
             plan["potion_capacity"] = 1
-        if stats.gold >= 2000 and (stats.ml_capacity * 10000 - stats.total_ml) < (
-            stats.ml_capacity * 1000
-        ):
+            gold -= 1000
+        if gold >= 1000 and stats.num_containable_ml < stats.ml_buy_threshold:
             plan["ml_capacity"] = 1
     print("[Log] Capacity purchase plan:", plan)
     return plan
