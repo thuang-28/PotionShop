@@ -23,10 +23,12 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
     with db.engine.begin() as connection:
+        total_ml = [0, 0, 0, 0]
         for potion in potions_delivered:
             sku = ""
             colors = ("R", "G", "B", "D")
             for i in range(4):
+                total_ml[i] += potion.potion_type[i] * potion.quantity
                 if potion.potion_type[i] > 0:
                     sku += str(potion.potion_type[i]) + colors[i]
             sku += "_POTION"
@@ -36,6 +38,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 + potion.potion_type[2] * 0.4
                 + potion.potion_type[3] * 0.65
             )
+            
             connection.execute(
                 sqlalchemy.text(
                     """
@@ -58,10 +61,6 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     "dark": potion.potion_type[3],
                 },
             )
-        total_ml = [
-            sum(potion.potion_type[i] * potion.quantity for potion in potions_delivered)
-            for i in range(4)
-        ]
         connection.execute(
             sqlalchemy.text(
                 """
