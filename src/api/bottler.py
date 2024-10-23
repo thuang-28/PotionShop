@@ -31,10 +31,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     sku += str(potion.potion_type[i]) + colors[i]
             sku += "_POTION"
             base_price = int(
-                potion.potion_type[0] * 0.5
-                + potion.potion_type[1] * 0.5
-                + potion.potion_type[2] * 0.5
-                + potion.potion_type[3] * 0.75
+                potion.potion_type[0] * 0.4
+                + potion.potion_type[1] * 0.4
+                + potion.potion_type[2] * 0.4
+                + potion.potion_type[3] * 0.65
             )
             connection.execute(
                 sqlalchemy.text(
