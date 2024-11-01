@@ -24,7 +24,11 @@ class Barrel(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
-    """ """
+    """
+    Posts delivery of barrels. order_id is a unique value representing
+    a single delivery.
+    """
+    print(f"[Log] Barrels delivered (ID {order_id}):", barrels_delivered)
     total_ml = [
         sum(
             barrel.potion_type[i] * barrel.quantity * barrel.ml_per_barrel
@@ -54,49 +58,51 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                 "total_price": total_price,
             },
         )
-    print(f"[Log] Barrels delivered (ID {order_id}):", barrels_delivered)
     return "OK"
 
 
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
-    """ """
-    print(wholesale_catalog)
-
+    """
+    Gets the plan for purchasing wholesale barrels. The call passes in a catalog of available barrels and the shop returns back which barrels they'd like to purchase and how many.
+    """
+    print("[Log] Barrel catalog:", wholesale_catalog)
     with db.engine.begin() as connection:
         stats = (
             connection.execute(
                 sqlalchemy.text(
                     """
                     SELECT gold,
-                           ml_capacity,
-                           num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_barrel_ml
+                           (ml_capacity * 10000 - (num_red_ml + num_green_ml + num_blue_ml + num_dark_ml)) AS ml_left,
+                           num_red_ml < 2500 AS needRed,
+                           num_green_ml < 2500 AS needGreen,
+                           num_blue_ml < 2500 AS needBlue,
+                           num_dark_ml < 2500 AS needDark
                     FROM global_inventory
                     """
                 )
             )
-        ).first()
+        ).one()
     purchase_plan = []
     total_price = 0
-    total_ml = stats.total_barrel_ml
-    while True:
-        barrel = max(
-            [
-                item
-                for item in wholesale_catalog
-                if item.quantity > 0
-                and stats.gold >= total_price + item.price
-                and stats.ml_capacity * 10000 >= total_ml + item.ml_per_barrel
-            ],
-            key=lambda b: b.ml_per_barrel,
-            default=None,
-        )
-        if not barrel:
-            break
+    needML = (stats.needRed, stats.needGreen, stats.needBlue, stats.needDark)
+    ml_left = stats.ml_left
+    for i in range(4):
+        if needML[i]:
+            barrel = max(
+                [
+                    item
+                    for item in wholesale_catalog
+                    if item.potion_type[i] == 1
+                    and stats.gold >= total_price + item.price
+                    and item.ml_per_barrel <= ml_left
+                ],
+                key=lambda b: b.ml_per_barrel,
+                default=None,
+            )
         total_price += barrel.price
-        total_ml += barrel.ml_per_barrel
+        ml_left -= barrel.ml_per_barrel
         purchase_plan.append({"sku": barrel.sku, "quantity": 1})
-        wholesale_catalog.remove(barrel)
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan

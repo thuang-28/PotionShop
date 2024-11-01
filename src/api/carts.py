@@ -82,7 +82,9 @@ class Customer(BaseModel):
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
     """
-    Which customers visited the shop today?
+    Shares the customers that visited the store on that tick. Not all
+    customers end up purchasing because they may not like what they see
+    in the current catalog.
     """
     print(customers)
 
@@ -91,15 +93,15 @@ def post_visits(visit_id: int, customers: list[Customer]):
 
 @router.post("/")
 def create_cart(new_cart: Customer):
-    """ """
+    """Creates a new cart for a specific customer."""
     with db.engine.begin() as connection:
         customer_id = connection.execute(
             sqlalchemy.text(
                 """
-                    INSERT INTO customers (name, class, level)
-                         VALUES (:name, :class, :level)
-                      RETURNING customers.id
-                    """
+                INSERT INTO customers (name, class, level)
+                        VALUES (:name, :class, :level)
+                    RETURNING customers.id
+                """
             ),
             {
                 "name": new_cart.customer_name,
@@ -110,9 +112,9 @@ def create_cart(new_cart: Customer):
         cart_id = connection.execute(
             sqlalchemy.text(
                 """
-                    INSERT INTO carts (customer_id)
-                         VALUES (:customer_id)
-                      RETURNING carts.id
+                INSERT INTO carts (customer_id)
+                        VALUES (:customer_id)
+                    RETURNING carts.id
                 """
             ),
             {"customer_id": customer_id},
@@ -127,7 +129,10 @@ class CartItem(BaseModel):
 
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
-    """ """
+    """Updates the quantity of a specific item in a cart."""
+    print(
+            f"[Log] Cart item updated (ID {cart_id}): {item_sku} (x{cart_item.quantity})"
+        )
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
@@ -141,9 +146,6 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
             ),
             {"id": cart_id, "sku": item_sku, "quantity": cart_item.quantity},
         )
-        print(
-            f"[Log] Cart item updated (ID {cart_id}): {item_sku} (x{cart_item.quantity})"
-        )
     return "OK"
 
 
@@ -153,39 +155,31 @@ class CartCheckout(BaseModel):
 
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
-    """ """
+    """Handles the checkout process for a specific cart."""
+    print(
+        f"[Log] Checked out (Cart ID {cart_id}) w/ payment method '{cart_checkout.payment}':",
+        checkout,
+    )
     with db.engine.begin() as connection:
-        cart_totals = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT SUM(price * cart_items.quantity) AS total_price,
-                       SUM(cart_items.quantity) AS total_potions
-                  FROM potion_inventory
-                  JOIN cart_items ON potion_inventory.sku = cart_items.sku
-                   AND cart_id = :cart_id
-                """
-            ),
-            {"cart_id": cart_id},
-        ).one()
         connection.execute(
             sqlalchemy.text(
                 """
+                UPDATE global_inventory
+                   SET gold = gold + (
+                       SELECT SUM(price * cart_items.quantity)
+                         FROM cart_items JOIN potion_inventory
+                           ON potion_inventory.sku = cart_items.sku AND cart_id = :cart_id
+                        );
                 UPDATE potion_inventory
                    SET quantity = potion_inventory.quantity - cart_items.quantity
                   FROM cart_items
                  WHERE potion_inventory.sku = cart_items.sku AND cart_id = :cart_id;
-                UPDATE global_inventory
-                   SET gold = gold + :total_price
                 """
             ),
-            {"cart_id": cart_id, "total_price": cart_totals.total_price},
+            {"cart_id": cart_id},
         )
     checkout = {
         "total_potions_bought": cart_totals.total_potions,
         "total_gold_paid": cart_totals.total_price,
     }
-    print(
-        f"[Log] Checked out (Cart ID {cart_id}) w/ payment method '{cart_checkout.payment}':",
-        checkout,
-    )
     return checkout

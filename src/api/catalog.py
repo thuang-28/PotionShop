@@ -9,7 +9,7 @@ router = APIRouter()
 @router.get("/catalog/", tags=["catalog"])
 def get_catalog():
     """
-    Each unique item combination must have only a single price.
+    Retrieves the catalog of items. Each unique item combination should have only a single price. You can have at most 6 potion SKUs offered in your catalog at one time.
     """
     with db.engine.begin() as connection:
         catalog = []

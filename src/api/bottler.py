@@ -21,7 +21,8 @@ class PotionInventory(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
-    """ """
+    """Posts delivery of potions. order_id is a unique value representing a single delivery."""
+    print(f"[Log] Potions delivered: {potions_delivered} Order id: {order_id}")
     with db.engine.begin() as connection:
         total_ml = [0, 0, 0, 0]
         for potion in potions_delivered:
@@ -73,21 +74,16 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             ),
             {"r": total_ml[0], "g": total_ml[1], "b": total_ml[2], "d": total_ml[3]},
         )
-    print(f"[Log] Potions delivered: {potions_delivered} Order Id: {order_id}")
     return "OK"
 
 
 @router.post("/plan")
 def get_bottle_plan():
-    """
-    Go from barrel to bottle.
-    """
+    """Gets the plan for bottling potions from barrels."""
 
     # Each bottle has a quantity of what proportion of red, blue, and
     # green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
-
-    # Initial logic: bottle all barrels into red potions.
     with db.engine.begin() as connection:
         inventory = (
             connection.execute(
@@ -134,7 +130,7 @@ def get_bottle_plan():
                 type[i] = 50
                 type[j] = 50
                 bottle_plan.append({"potion_type": type, "quantity": num_mixed_potions})
-    print(f"[Log] Bottle Plan: {bottle_plan}")
+    print("[Log] Bottle Plan:", bottle_plan)
     return bottle_plan
 
 
