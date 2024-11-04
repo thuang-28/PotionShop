@@ -109,8 +109,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 key=lambda b: b.ml_per_barrel,
                 default=None,
             )
-            total_price += barrel.price
-            ml_left -= barrel.ml_per_barrel
-            purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+            if barrel:
+                total_price += barrel.price
+                ml_left -= barrel.ml_per_barrel
+                purchase_plan.append({"sku": barrel.sku, "quantity": 1})
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan
