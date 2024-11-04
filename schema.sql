@@ -73,3 +73,8 @@ create table public.ml_records (
     timestamp timestamp with time zone not null default now(),
     constraint ml_inventory_pkey primary key (id)
 ) tablespace pg_default;
+ 
+ 
+INSERT INTO gold_records DEFAULT VALUES;
+
+INSERT INTO capacity_records DEFAULT VALUES;
