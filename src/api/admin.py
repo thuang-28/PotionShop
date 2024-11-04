@@ -22,9 +22,9 @@ def reset():
             sqlalchemy.text(
                 """
                 DELETE FROM gold_records;
-                INSERT INTO gold_records (change_in_gold) VALUES (100);
+                INSERT INTO gold_records DEFAULT VALUES;
                 DELETE FROM capacity_records;
-                INSERT INTO capacity_records (potion_units, ml_units) VALUES (1, 1);
+                INSERT INTO capacity_records DEFAULT VALUES;
                 DELETE FROM cart_items;
                 DELETE FROM carts;
                 DELETE FROM potion_records;
