@@ -27,7 +27,6 @@ def reset():
                 INSERT INTO capacity_records (potion_units, ml_units) VALUES (1, 1);
                 DELETE FROM cart_items;
                 DELETE FROM carts;
-                DELETE FROM customers;
                 DELETE FROM potion_records;
                 DELETE FROM ml_records;
                 """
