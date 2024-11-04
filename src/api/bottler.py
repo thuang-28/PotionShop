@@ -31,10 +31,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                     """
                     INSERT INTO potion_records (sku, qty_change)
                     SELECT sku, :quantity FROM potion_index
-                        WHERE red = :red
-                          AND green = :green
-                          AND blue = :blue
-                          AND dark = :dark
+                        WHERE red_pct = :red
+                          AND green_pct = :green
+                          AND blue_pct = :blue
+                          AND dark_pct = :dark
                     """
                 ),
                 {
