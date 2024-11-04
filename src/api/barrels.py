@@ -77,10 +77,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                           FROM capacity_records
                     )
                     SELECT (ml.limit - COALESCE(SUM(red + green + blue + dark), 0)) AS ml_left,
-                           SUM(red) < ml.threshold AS needRed,
-                           SUM(green) < ml.threshold AS needGreen,
-                           SUM(blue) < ml.threshold AS needBlue,
-                           SUM(dark) < ml.threshold AS needDark
+                           SUM(red) < ml.threshold AS need_red,
+                           SUM(green) < ml.threshold AS need_green,
+                           SUM(blue) < ml.threshold AS need_blue,
+                           SUM(dark) < ml.threshold AS need_dark
                     FROM ml_records, ml
                     GROUP BY ml.limit, ml.threshold
                     """
@@ -94,7 +94,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         ).scalar_one()
     purchase_plan = []
     total_price = 0
-    needML = (ml.needRed, ml.needGreen, ml.needBlue, ml.needDark)
+    needML = (ml.need_red, ml.need_green, ml.need_blue, ml.need_dark)
     ml_left = ml.ml_left
     for i in range(4):
         if needML[i]:
