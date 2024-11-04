@@ -144,10 +144,6 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """Handles the checkout process for a specific cart."""
-    print(
-        f"[Log] Checked out (Cart ID {cart_id}) w/ payment method '{cart_checkout.payment}':",
-        checkout,
-    )
     with db.engine.begin() as connection:
         total_price = connection.execute(
             sqlalchemy.text(
@@ -177,4 +173,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         "total_potions_bought": total_potions_bought,
         "total_gold_paid": total_price,
     }
+    print(
+        f"[Log] Checked out (Cart ID {cart_id}) w/ payment method '{cart_checkout.payment}':",
+        checkout,
+    )
     return checkout
