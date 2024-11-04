@@ -112,26 +112,26 @@ def get_bottle_plan():
     for potion in todays_potions:
         max_qty = (
             min(
-                ml_list[0] // potion.red_ml,
-                ml_list[1] // potion.green_ml,
-                ml_list[2] // potion.blue_ml,
-                ml_list[3] // potion.dark_ml,
+                ml_list[0] // potion.red_pct,
+                ml_list[1] // potion.green_pct,
+                ml_list[2] // potion.blue_pct,
+                ml_list[3] // potion.dark_pct,
             ) // 2
         )
         num_mixable = min(max_qty, potions_left, 20)
         if num_mixable > 0:
-            ml_list[0] -= num_mixable * potion.red_ml
-            ml_list[1] -= num_mixable * potion.green_ml
-            ml_list[2] -= num_mixable * potion.blue_ml
-            ml_list[3] -= num_mixable * potion.dark_ml
+            ml_list[0] -= num_mixable * potion.red_pct
+            ml_list[1] -= num_mixable * potion.green_pct
+            ml_list[2] -= num_mixable * potion.blue_pct
+            ml_list[3] -= num_mixable * potion.dark_pct
             potions_left -= num_mixable
             bottle_plan.append(
                 {
                     "potion_type": [
-                        potion.red_ml,
-                        potion.green_ml,
-                        potion.blue_ml,
-                        potion.dark_ml,
+                        potion.red_pct,
+                        potion.green_pct,
+                        potion.blue_pct,
+                        potion.dark_pct,
                     ],
                     "quantity": num_mixable,
                 }
