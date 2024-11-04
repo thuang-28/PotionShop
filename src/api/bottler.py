@@ -74,12 +74,13 @@ def get_bottle_plan():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT DISTINCT red_pct, green_pct, blue_pct, dark_pct,
-                           SUM(qty_change) OVER (PARTITION BY potion_index.sku) AS quantity
+                    SELECT red_pct, green_pct, blue_pct, dark_pct,
+                           SUM(qty_change) AS quantity
                       FROM potion_index
                       JOIN potion_records ON potion_records.sku = potion_index.sku
                       JOIN potion_strategy ON potion_strategy.potion_sku = potion_records.sku
                        AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                     GROUP BY potion_index.sku
                      ORDER BY quantity;
                     """
                 )
