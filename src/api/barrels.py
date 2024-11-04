@@ -42,20 +42,18 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE global_inventory
-                   SET num_red_ml = num_red_ml + :new_red,
-                       num_green_ml = num_green_ml + :new_green,
-                       num_blue_ml = num_blue_ml + :new_blue,
-                       num_dark_ml = num_dark_ml + :new_dark,
-                       gold = gold - :total_price
+                INSERT INTO ml_records (red, green, blue, dark)
+                VALUES (:red, :green, :blue, :dark);
+                INSERT INTO gold_records (change_in_gold)
+                VALUES (:price * -1)
                 """
             ),
             {
-                "new_red": total_ml[0],
-                "new_green": total_ml[1],
-                "new_blue": total_ml[2],
-                "new_dark": total_ml[3],
-                "total_price": total_price,
+                "red": total_ml[0],
+                "green": total_ml[1],
+                "blue": total_ml[2],
+                "dark": total_ml[3],
+                "price": total_price,
             },
         )
     return "OK"
@@ -69,25 +67,35 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """
     print("[Log] Barrel catalog:", wholesale_catalog)
     with db.engine.begin() as connection:
-        stats = (
+        ml = (
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT gold,
-                           (ml_capacity * 10000 - (num_red_ml + num_green_ml + num_blue_ml + num_dark_ml)) AS ml_left,
-                           num_red_ml < 2500 AS needRed,
-                           num_green_ml < 2500 AS needGreen,
-                           num_blue_ml < 2500 AS needBlue,
-                           num_dark_ml < 2500 AS needDark
-                    FROM global_inventory
+                    WITH ml AS (
+                        SELECT 2500 * SUM(ml_units) AS threshold,
+                               10000 * SUM(ml_units) AS limit
+                          FROM capacity_records
+                    )
+                    SELECT (ml.limit - COALESCE(SUM(red + green + blue + dark), 0)) AS ml_left,
+                           SUM(red) < ml.threshold AS needRed,
+                           SUM(green) < ml.threshold AS needGreen,
+                           SUM(blue) < ml.threshold AS needBlue,
+                           SUM(dark) < ml.threshold AS needDark
+                    FROM ml_records, ml
+                    GROUP BY ml.limit, ml.threshold
                     """
                 )
             )
         ).one()
+        gold = (
+            connection.execute(
+                sqlalchemy.text("SELECT SUM(change_in_gold) FROM gold_records")
+            )
+        ).scalar_one()
     purchase_plan = []
     total_price = 0
-    needML = (stats.needRed, stats.needGreen, stats.needBlue, stats.needDark)
-    ml_left = stats.ml_left
+    needML = (ml.needRed, ml.needGreen, ml.needBlue, ml.needDark)
+    ml_left = ml.ml_left
     for i in range(4):
         if needML[i]:
             barrel = max(
@@ -95,7 +103,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     item
                     for item in wholesale_catalog
                     if item.potion_type[i] == 1
-                    and stats.gold >= total_price + item.price
+                    and gold >= total_price + item.price
                     and item.ml_per_barrel <= ml_left
                 ],
                 key=lambda b: b.ml_per_barrel,

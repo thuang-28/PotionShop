@@ -1,7 +1,6 @@
 import sqlalchemy
 from fastapi import APIRouter
 from src import database as db
-import re
 
 router = APIRouter()
 
@@ -12,38 +11,35 @@ def get_catalog():
     Retrieves the catalog of items. Each unique item combination should have only a single price. You can have at most 6 potion SKUs offered in your catalog at one time.
     """
     with db.engine.begin() as connection:
-        catalog = []
-        potions = (
-            connection.execute(
-                sqlalchemy.text(
-                    """
-                    SELECT sku, quantity, price,
-                           red, green, blue, dark
-                      FROM potion_inventory
-                     WHERE quantity > 0
+        potions = connection.execute(
+            sqlalchemy.text(
+                """
+                    SELECT potion_index.sku, price,
+                           SUM(qty_change) AS quantity,
+                           red_pct, green_pct, blue_pct, dark_pct
+                      FROM potion_index JOIN potion_records
+                        ON potion_index.sku = potion_records.sku 
+                     GROUP BY potion_index.sku
+                    HAVING SUM(qty_change) > 0
                      ORDER BY quantity DESC
                      LIMIT 6
                     """
-                )
             )
-            .mappings()
-            .fetchall()
-        )
+        ).all()
+    catalog = []
     for potion in potions:
-        name = re.sub(r"([0-9]{1,3})([A-Z])_", r"\g<1>\g<2>, ", potion["sku"]).replace(
-            ", POTION", " Potion"
-        )
+        name = potion.sku.replace("_", " ").title()
         catalog.append(
             {
-                "sku": potion["sku"],
+                "sku": potion.sku,
                 "name": name,
-                "quantity": potion["quantity"],
-                "price": potion["price"],
+                "quantity": potion.quantity,
+                "price": potion.price,
                 "potion_type": [
-                    potion["red"],
-                    potion["green"],
-                    potion["blue"],
-                    potion["dark"],
+                    potion.red_pct,
+                    potion.green_pct,
+                    potion.blue_pct,
+                    potion.dark_pct,
                 ],
             }
         )

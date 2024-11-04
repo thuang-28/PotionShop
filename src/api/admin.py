@@ -21,18 +21,15 @@ def reset():
         connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE global_inventory
-                   SET num_red_ml = 0,
-                       num_green_ml = 0,
-                       num_blue_ml = 0,
-                       num_dark_ml = 0,
-                       gold = 100,
-                       potion_capacity = 1,
-                       ml_capacity = 1;
+                DELETE FROM gold_records;
+                INSERT INTO gold_records (change_in_gold) VALUES (100);
+                DELETE FROM capacity_records;
+                INSERT INTO capacity_records (potion_units, ml_units) VALUES (1, 1);
                 DELETE FROM cart_items;
                 DELETE FROM carts;
                 DELETE FROM customers;
-                DELETE FROM potion_inventory;
+                DELETE FROM potion_records;
+                DELETE FROM ml_records;
                 """
             )
         )

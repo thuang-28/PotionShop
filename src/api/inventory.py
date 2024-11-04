@@ -1,5 +1,3 @@
-import math
-
 import sqlalchemy
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -16,21 +14,19 @@ router = APIRouter(
 
 @router.get("/audit")
 def get_inventory():
-    """ """
+    """
+    Return a summary of your current number of potions, ml, and gold.
+    """
     with db.engine.begin() as connection:
         inventory = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT gold,
-                       (
-                           SELECT COALESCE(SUM(quantity), 0) AS total_potions
-                             FROM potion_inventory
-                        ),
-                       num_red_ml + num_green_ml + num_blue_ml + num_dark_ml AS total_ml
-                  FROM global_inventory
+                SELECT (SELECT COALESCE(SUM(qty_change), 0) FROM potion_records) AS total_potions,
+                       (SELECT COALESCE(SUM(red + green + blue + dark), 0) FROM ml_records) AS total_ml,
+                       (SELECT SUM(change_in_gold) FROM gold_records) AS gold
                 """
             )
-        ).first()
+        ).one()
         audit = {
             "number_of_potions": inventory.total_potions,
             "ml_in_barrels": inventory.total_ml,
@@ -52,18 +48,27 @@ def get_capacity_plan():
         stats = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT gold,
-                       potion_capacity * 50 - (
-                            SELECT COALESCE(SUM(quantity), 0) AS total_potions
-                              FROM potion_inventory
-                        ) AS num_craftable_pot,
-                       potion_capacity * 10 AS potion_buy_threshold,
-                       ml_capacity * 10000 - (num_red_ml + num_green_ml + num_blue_ml + num_dark_ml) AS num_containable_ml,
-                       ml_capacity * 1000 AS ml_buy_threshold
-                  FROM global_inventory
+                WITH capacity (p, ml) AS (
+                    SELECT SUM(potion_units), SUM(ml_units)
+                      FROM capacity_records
+                ),
+                potions (total) AS (
+                    SELECT COALESCE(SUM(qty_change), 0)
+                      FROM potion_records
+                ),
+                ml (total) AS (
+                    SELECT COALESCE(SUM(red + green + blue + dark), 0)
+                      FROM ml_records
+                )
+                SELECT (SELECT SUM(change_in_gold) FROM gold_records) AS gold,
+                       capacity.p * 50 - potions.total AS num_craftable_pot,
+                       capacity.p * 10 AS potion_buy_threshold,
+                       capacity.ml * 10000 - ml.total AS num_containable_ml,
+                       capacity.ml * 1000 AS ml_buy_threshold
+                  FROM capacity, potions, ml
                 """
             )
-        ).first()
+        ).one()
         gold = stats.gold
         if gold >= 1000 and stats.num_craftable_pot < stats.potion_buy_threshold:
             plan["potion_capacity"] = 1
@@ -91,10 +96,10 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
         connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE global_inventory
-                   SET potion_capacity = potion_capacity + :new_pot_units,
-                       ml_capacity = ml_capacity + :new_ml_units,
-                       gold = gold - ((:new_pot_units + :new_ml_units) * 1000)
+                INSERT INTO capacity_records (potion_units, ml_units)
+                     VALUES (:new_pot_units, :new_ml_units);
+                INSERT INTO gold_records (change_in_gold)
+                     VALUES ((:new_pot_units + :new_ml_units) * -1000)
                 """
             ),
             {

@@ -95,12 +95,12 @@ def post_visits(visit_id: int, customers: list[Customer]):
 def create_cart(new_cart: Customer):
     """Creates a new cart for a specific customer."""
     with db.engine.begin() as connection:
-        customer_id = connection.execute(
+        cart_id = connection.execute(
             sqlalchemy.text(
                 """
-                INSERT INTO customers (name, class, level)
+                INSERT INTO carts (customer_name, customer_class, level)
                         VALUES (:name, :class, :level)
-                    RETURNING customers.id
+                    RETURNING carts.id
                 """
             ),
             {
@@ -108,16 +108,6 @@ def create_cart(new_cart: Customer):
                 "class": new_cart.character_class,
                 "level": new_cart.level,
             },
-        ).scalar_one()
-        cart_id = connection.execute(
-            sqlalchemy.text(
-                """
-                INSERT INTO carts (customer_id)
-                        VALUES (:customer_id)
-                    RETURNING carts.id
-                """
-            ),
-            {"customer_id": customer_id},
         ).scalar_one()
     print(f"[Log] New cart created (ID {cart_id}) for", new_cart)
     return {"cart_id": cart_id}
@@ -130,9 +120,7 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """Updates the quantity of a specific item in a cart."""
-    print(
-            f"[Log] Cart item updated (ID {cart_id}): {item_sku} (x{cart_item.quantity})"
-        )
+    print(f"[Log] Cart item updated (ID {cart_id}): {item_sku} (x{cart_item.quantity})")
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
@@ -161,25 +149,32 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         checkout,
     )
     with db.engine.begin() as connection:
-        connection.execute(
+        total_price = connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE global_inventory
-                   SET gold = gold + (
-                       SELECT SUM(price * cart_items.quantity)
-                         FROM cart_items JOIN potion_inventory
-                           ON potion_inventory.sku = cart_items.sku AND cart_id = :cart_id
-                        );
-                UPDATE potion_inventory
-                   SET quantity = potion_inventory.quantity - cart_items.quantity
-                  FROM cart_items
-                 WHERE potion_inventory.sku = cart_items.sku AND cart_id = :cart_id;
+                INSERT INTO potion_records (sku, qty_change)
+                SELECT sku, quantity * -1 FROM cart_items
+                 WHERE cart_id = :id;
+                INSERT INTO gold_records (change_in_gold)
+                SELECT SUM(potion_index.price * cart_items.quantity)
+                  FROM potion_index JOIN cart_items
+                    ON potion_index.sku = cart_items.sku AND cart_id = :cart_id
+                RETURNING change_in_gold;
                 """
             ),
             {"cart_id": cart_id},
-        )
+        ).scalar_one()
+        total_potions_bought = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT SUM(cart_items.quantity) FROM cart_items
+                 WHERE cart_id = :cart_id
+                """
+            ),
+            {"cart_id": cart_id},
+        ).scalar_one()
     checkout = {
-        "total_potions_bought": cart_totals.total_potions,
-        "total_gold_paid": cart_totals.total_price,
+        "total_potions_bought": total_potions_bought,
+        "total_gold_paid": total_price,
     }
     return checkout

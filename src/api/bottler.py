@@ -1,5 +1,3 @@
-from enum import Enum
-
 import sqlalchemy
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -26,36 +24,21 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     with db.engine.begin() as connection:
         total_ml = [0, 0, 0, 0]
         for potion in potions_delivered:
-            sku = ""
-            colors = ("R", "G", "B", "D")
             for i in range(4):
                 total_ml[i] += potion.potion_type[i] * potion.quantity
-                if potion.potion_type[i] > 0:
-                    sku += str(potion.potion_type[i]) + colors[i]
-            sku += "_POTION"
-            base_price = int(
-                potion.potion_type[0] * 0.4
-                + potion.potion_type[1] * 0.4
-                + potion.potion_type[2] * 0.4
-                + potion.potion_type[3] * 0.65
-            )
-            
             connection.execute(
                 sqlalchemy.text(
                     """
-                    INSERT INTO potion_inventory (sku, quantity, price,
-                                                  red, green, blue, dark)
-                         VALUES (:sku, :quantity, :price,
-                                 :red, :green, :blue, :dark)
-                    ON CONFLICT (sku)
-                      DO UPDATE
-                            SET quantity = potion_inventory.quantity + :quantity
+                    INSERT INTO potion_records (sku, qty_change)
+                    SELECT sku, :quantity FROM potion_index
+                        WHERE red = :red
+                          AND green = :green
+                          AND blue = :blue
+                          AND dark = :dark
                     """
                 ),
                 {
-                    "sku": sku,
                     "quantity": potion.quantity,
-                    "price": base_price,
                     "red": potion.potion_type[0],
                     "green": potion.potion_type[1],
                     "blue": potion.potion_type[2],
@@ -65,14 +48,16 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE global_inventory
-                   SET num_red_ml = num_red_ml - :r,
-                       num_green_ml = num_green_ml - :g,
-                       num_blue_ml = num_blue_ml - :b,
-                       num_dark_ml = num_dark_ml - :d
+                INSERT INTO ml_records (red, green, blue, dark)
+                     VALUES (:red * -1, :green * -1, :blue * -1, :dark * -1)
                 """
             ),
-            {"r": total_ml[0], "g": total_ml[1], "b": total_ml[2], "d": total_ml[3]},
+            {
+                "red": total_ml[0],
+                "green": total_ml[1],
+                "blue": total_ml[2],
+                "dark": total_ml[3],
+            },
         )
     return "OK"
 
@@ -85,51 +70,72 @@ def get_bottle_plan():
     # green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
     with db.engine.begin() as connection:
-        inventory = (
+        todays_potions = (
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml,
-                           potion_capacity,
-                           (
-                               SELECT COALESCE(SUM(quantity), 0) AS total_potions
-                                 FROM potion_inventory
-                            )
-                    FROM global_inventory
+                    SELECT DISTINCT red_pct, green_pct, blue_pct, dark_pct,
+                           SUM(qty_change) OVER (PARTITION BY potion_index.sku) AS quantity
+                      FROM potion_index
+                      JOIN potion_records ON potion_records.sku = potion_index.sku
+                      JOIN potion_strategy ON potion_strategy.potion_sku = potion_records.sku
+                       AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                     ORDER BY quantity;
                     """
                 )
             )
-        ).first()
-    bottle_plan = []
-    ml_list = list(inventory[0:4])
-    total_bottles = inventory.total_potions
-    num_mixable = [0, 0, 0, 0]
-    for idx in range(4):
-        num_pure_potions = min(
-            int(ml_list[idx] / 200), inventory.potion_capacity * 50 - total_bottles
-        )
-        if num_pure_potions > 0:
-            total_bottles += num_pure_potions
-            ml_list[idx] = ml_list[idx] - (num_pure_potions * 100)
-            type = [0, 0, 0, 0]
-            type[idx] = 100
-            bottle_plan.append({"potion_type": type, "quantity": num_pure_potions})
-        num_mixable[idx] = int(ml_list[idx] / 150)
-    for i, j in [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (1, 3)]:
-        if ml_list[i] >= 50 and ml_list[j] >= 50:
-            num_mixed_potions = min(
-                num_mixable[i],
-                num_mixable[j],
-                inventory.potion_capacity * 50 - total_bottles,
+        ).all()
+        limits = (
+            connection.execute(
+                sqlalchemy.text(
+                    """
+                    WITH p AS (
+                        SELECT
+                            (SELECT SUM(potion_units) * 50 FROM capacity_records) -
+                            (SELECT SUM(qty_change) FROM potion_records)
+                        AS remaining
+                    )
+                    SELECT p.remaining AS potions_left,
+                           COALESCE(SUM(red), 0) AS red_ml,
+                           COALESCE(SUM(green), 0) AS green_ml,
+                           COALESCE(SUM(blue), 0) AS blue_ml,
+                           COALESCE(SUM(dark), 0) AS dark_ml
+                      FROM ml_records, p
+                     GROUP BY potions_left;
+                    """
+                )
             )
-            if num_mixed_potions > 0:
-                total_bottles += num_mixed_potions
-                ml_list[i] = ml_list[i] - (num_mixed_potions * 50)
-                ml_list[j] = ml_list[j] - (num_mixed_potions * 50)
-                type = [0, 0, 0, 0]
-                type[i] = 50
-                type[j] = 50
-                bottle_plan.append({"potion_type": type, "quantity": num_mixed_potions})
+        ).one()
+    bottle_plan = []
+    ml_list = [limits.red_ml, limits.green_ml, limits.blue_ml, limits.dark_ml]
+    potions_left = limits.potions_left
+    for potion in todays_potions:
+        max_qty = (
+            min(
+                ml_list[0] // potion.red_ml,
+                ml_list[1] // potion.green_ml,
+                ml_list[2] // potion.blue_ml,
+                ml_list[3] // potion.dark_ml,
+            ) // 2
+        )
+        num_mixable = min(max_qty, potions_left, 20)
+        if num_mixable > 0:
+            ml_list[0] -= num_mixable * potion.red_ml
+            ml_list[1] -= num_mixable * potion.green_ml
+            ml_list[2] -= num_mixable * potion.blue_ml
+            ml_list[3] -= num_mixable * potion.dark_ml
+            potions_left -= num_mixable
+            bottle_plan.append(
+                {
+                    "potion_type": [
+                        potion.red_ml,
+                        potion.green_ml,
+                        potion.blue_ml,
+                        potion.dark_ml,
+                    ],
+                    "quantity": num_mixable,
+                }
+            )
     print("[Log] Bottle Plan:", bottle_plan)
     return bottle_plan
 
