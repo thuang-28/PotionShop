@@ -150,7 +150,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 """
                 INSERT INTO potion_records (sku, qty_change)
                 SELECT sku, quantity * -1 FROM cart_items
-                 WHERE cart_id = :id;
+                 WHERE cart_id = :cart_id;
                 INSERT INTO gold_records (change_in_gold)
                 SELECT SUM(potion_index.price * cart_items.quantity)
                   FROM potion_index JOIN cart_items
