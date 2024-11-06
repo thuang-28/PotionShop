@@ -8,6 +8,8 @@ create table public.potion_index (
     constraint potion_index_pkey primary key (sku)
 ) tablespace pg_default;
 
+CREATE TYPE public.day of week AS ENUM ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
+
 create table public.potion_strategy (
     day_of_week public.day of week not null,
     potion_sku text not null,
