@@ -16,7 +16,7 @@ def get_catalog():
                 """
                     SELECT potion_index.sku, price,
                            SUM(qty_change) AS quantity,
-                           red_pct, green_pct, blue_pct, dark_pct
+                           ARRAY[red_pct, green_pct, blue_pct, dark_pct] AS type
                       FROM potion_index JOIN potion_records
                         ON potion_index.sku = potion_records.sku 
                      GROUP BY potion_index.sku
@@ -35,12 +35,7 @@ def get_catalog():
                 "name": name,
                 "quantity": potion.quantity,
                 "price": potion.price,
-                "potion_type": [
-                    potion.red_pct,
-                    potion.green_pct,
-                    potion.blue_pct,
-                    potion.dark_pct,
-                ],
+                "potion_type": potion.type,
             }
         )
     print("[Log] Available Catalog:", catalog)

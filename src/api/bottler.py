@@ -74,7 +74,7 @@ def get_bottle_plan():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT red_pct, green_pct, blue_pct, dark_pct,
+                    SELECT ARRAY[red_pct, green_pct, blue_pct, dark_pct] AS potion_type,
                            COALESCE(SUM(qty_change), 0) AS quantity
                       FROM potion_index
                       LEFT JOIN potion_records ON potion_records.sku = potion_index.sku
@@ -97,10 +97,12 @@ def get_bottle_plan():
                         AS remaining
                     )
                     SELECT p.remaining AS potions_left,
-                           COALESCE(SUM(red), 0) AS red_ml,
-                           COALESCE(SUM(green), 0) AS green_ml,
-                           COALESCE(SUM(blue), 0) AS blue_ml,
-                           COALESCE(SUM(dark), 0) AS dark_ml
+                           ARRAY[
+                               COALESCE(SUM(red), 0),
+                               COALESCE(SUM(green), 0),
+                               COALESCE(SUM(blue), 0),
+                               COALESCE(SUM(dark), 0)
+                            ] AS ml_list
                       FROM ml_records, p
                      GROUP BY potions_left;
                     """
@@ -108,26 +110,20 @@ def get_bottle_plan():
             )
         ).one()
     bottle_plan = []
-    ml_list = [limits.red_ml, limits.green_ml, limits.blue_ml, limits.dark_ml]
+    ml_list = limits.ml_list
     potions_left = limits.potions_left
     for potion in todays_potions:
-        potion_type = [potion.red_pct, potion.green_pct, potion.blue_pct, potion.dark_pct]
         max_qty = (
-            min(ml_list[i] // potion_type[i] for i in range(4) if potion_type[i] != 0) // 2
+            min(ml_list[i] // potion.potion_type[i] for i in range(4) if potion.potion_type[i] != 0) // 2
         )
         num_mixable = min(max_qty, potions_left, 20)
         if num_mixable > 0:
             for i in range(4):
-                ml_list[i] -= num_mixable * potion_type[i]
+                ml_list[i] -= num_mixable * potion.potion_type[i]
             potions_left -= num_mixable
             bottle_plan.append(
                 {
-                    "potion_type": [
-                        potion.red_pct,
-                        potion.green_pct,
-                        potion.blue_pct,
-                        potion.dark_pct,
-                    ],
+                    "potion_type": potion.potion_type,
                     "quantity": num_mixable,
                 }
             )
