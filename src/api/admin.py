@@ -25,8 +25,6 @@ def reset():
                 INSERT INTO gold_records DEFAULT VALUES;
                 DELETE FROM capacity_records;
                 INSERT INTO capacity_records DEFAULT VALUES;
-                DELETE FROM cart_items;
-                DELETE FROM carts;
                 DELETE FROM potion_records;
                 DELETE FROM ml_records;
                 """
