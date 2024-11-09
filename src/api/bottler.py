@@ -114,7 +114,12 @@ def get_bottle_plan():
     potions_left = limits.potions_left
     for potion in todays_potions:
         max_qty = (
-            min(ml_list[i] // potion.potion_type[i] for i in range(4) if potion.potion_type[i] != 0) // 2
+            min(
+                ml_list[i] // potion.potion_type[i]
+                for i in range(4)
+                if potion.potion_type[i] != 0
+            )
+            // 2
         )
         num_mixable = min(max_qty, potions_left, 20)
         if num_mixable > 0:
