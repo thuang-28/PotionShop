@@ -78,7 +78,7 @@ def get_bottle_plan():
                            COALESCE(SUM(qty_change), 0) AS quantity
                       FROM potion_index
                       LEFT JOIN potion_records ON potion_records.sku = potion_index.sku
-                      JOIN potion_strategy ON potion_strategy.potion_sku = potion_records.sku
+                      JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
                        AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
                      GROUP BY potion_index.sku
                      ORDER BY quantity;
