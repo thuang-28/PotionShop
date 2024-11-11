@@ -13,6 +13,7 @@ CREATE TYPE public.day of week AS ENUM ('Sunday', 'Monday', 'Tuesday', 'Wednesda
 create table public.potion_strategy (
     day_of_week public.day of week not null,
     potion_sku text not null,
+    favorability real not null default '1.5'::real,
     constraint potion_strategy_pkey primary key (day_of_week, potion_sku),
     constraint potion_strategy_potion_sku_fkey foreign key (potion_sku) references potion_index (sku)
 ) tablespace pg_default;
