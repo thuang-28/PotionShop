@@ -121,7 +121,7 @@ def get_bottle_plan():
             )
             // 2
         )
-        num_mixable = min(max_qty, potions_left, 20)
+        num_mixable = min(max_qty, potions_left, 30)
         if num_mixable > 0:
             for i in range(4):
                 ml_list[i] -= num_mixable * potion.potion_type[i]
