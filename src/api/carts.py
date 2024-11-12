@@ -57,19 +57,52 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    offset = 0 if not search_page else int(search_page)
+    sort_order_str = " ASC" if sort_order == search_sort_order.asc else " DESC"
+    match sort_col:
+        case search_sort_options.customer_name:
+            sort_col_str = " ORDER BY customer_name"
+        case search_sort_options.item_sku:
+            sort_col_str = " ORDER BY item_sku"
+        case search_sort_options.line_item_total:
+            sort_col_str = " ORDER BY line_item_total"
+        case _:
+            sort_col_str = " ORDER BY timestamp"
+
+    with db.engine.begin() as connection:
+        results = (
+            connection.execute(
+                sqlalchemy.text(
+                    """
+                    SELECT item_id AS line_item_id,
+                           quantity::text || ' ' || cart_items.sku AS item_sku,
+                           customer_name,
+                           quantity * price AS line_item_total,
+                           created_at AS timestamp
+                      FROM cart_items
+                      JOIN carts ON cart_items.cart_id = carts.id
+                      JOIN potion_index ON cart_items.sku = potion_index.sku
+                     WHERE LOWER(customer_name) LIKE LOWER(:c_name)
+                       AND LOWER(cart_items.sku) LIKE LOWER(:p_sku)
+                    """
+                    + sort_col_str
+                    + sort_order_str
+                    + " LIMIT 5 OFFSET :offset"
+                ),
+                {
+                    "c_name": "%" + customer_name + "%",
+                    "p_sku": "%" + potion_sku + "%",
+                    "offset": offset,
+                },
+            )
+            .mappings()
+            .all()
+        )
 
     return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
+        "previous": "" if not offset or offset - 5 < 0 else str(offset - 5),
+        "next": "" if not results else str(offset + len(results)),
+        "results": results,
     }
 
 
