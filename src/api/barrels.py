@@ -71,22 +71,29 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             connection.execute(
                 sqlalchemy.text(
                     """
-                    WITH ml AS (
-                        SELECT 2500 * SUM(ml_units) AS threshold,
-                               10000 * SUM(ml_units) AS limit
-                          FROM capacity_records
-                    )
-                    SELECT (ml.limit - COALESCE(SUM(red + green + blue + dark), 0)) AS ml_left,
-                           SUM(red) < ml.threshold AS need_red,
-                           SUM(green) < ml.threshold AS need_green,
-                           SUM(blue) < ml.threshold AS need_blue,
-                           SUM(dark) < ml.threshold AS need_dark
-                    FROM ml_records, ml
-                    GROUP BY ml.limit, ml.threshold
+                    SELECT ARRAY[
+                                SUM(red_pct * favorability),
+                                SUM(green_pct * favorability),
+                                SUM(blue_pct * favorability),
+                                SUM(dark_pct * favorability)
+                            ]
+                      FROM potion_index
+                      JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
+                       AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
                     """
                 )
             )
-        ).one()
+        ).scalar_one()
+        ml_left = connection.execute(
+            sqlalchemy.text(
+                """
+                    SELECT
+                        (SELECT 10000 * SUM(ml_units) FROM capacity_records)
+                        - (SELECT COALESCE(SUM(red + green + blue + dark), 0) FROM ml_records)
+                    AS left
+                """
+            )
+        ).scalar_one()
         gold = (
             connection.execute(
                 sqlalchemy.text("SELECT SUM(change_in_gold) FROM gold_records")
@@ -94,24 +101,23 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         ).scalar_one()
     purchase_plan = []
     total_price = 0
-    needML = (ml.need_red, ml.need_green, ml.need_blue, ml.need_dark)
-    ml_left = ml.ml_left
     for i in range(4):
-        if needML[i]:
-            barrel = max(
-                [
-                    item
-                    for item in wholesale_catalog
-                    if item.potion_type[i] == 1
-                    and gold >= total_price + item.price
-                    and item.ml_per_barrel <= ml_left
-                ],
-                key=lambda b: b.ml_per_barrel,
-                default=None,
-            )
-            if barrel:
-                total_price += barrel.price
-                ml_left -= barrel.ml_per_barrel
-                purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+        max_idx = ml.index(max(ml))
+        ml[max_idx] = 0
+        barrel = max(
+            [
+                item
+                for item in wholesale_catalog
+                if item.potion_type[max_idx] == 1
+                and gold >= total_price + item.price
+                and item.ml_per_barrel <= ml_left
+            ],
+            key=lambda b: b.ml_per_barrel,
+            default=None,
+        )
+        if barrel:
+            total_price += barrel.price
+            ml_left -= barrel.ml_per_barrel
+            purchase_plan.append({"sku": barrel.sku, "quantity": 1})
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan
