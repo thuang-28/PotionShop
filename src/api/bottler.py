@@ -93,7 +93,7 @@ def get_bottle_plan():
                     WITH p AS (
                         SELECT
                             (SELECT SUM(potion_units) * 50 FROM capacity_records) -
-                            (SELECT SUM(qty_change) FROM potion_records)
+                            (SELECT COALESCE(SUM(qty_change), 0) FROM potion_records)
                         AS remaining
                     )
                     SELECT p.remaining AS potions_left,
