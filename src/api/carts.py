@@ -100,7 +100,11 @@ def search_orders(
         )
 
     return {
-        "previous": "" if not offset or offset - 5 < 0 else str(offset - 5),
+        "previous": (
+            ""
+            if not offset or offset - len(results) < 0
+            else str(offset - len(results))
+        ),
         "next": "" if not results else str(offset + len(results)),
         "results": results,
     }
