@@ -119,7 +119,6 @@ def get_bottle_plan():
                 for i in range(4)
                 if potion.potion_type[i] != 0
             )
-            // 2
         )
         num_mixable = min(max_qty, potions_left)
         if num_mixable > 0:
