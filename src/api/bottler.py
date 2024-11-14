@@ -75,13 +75,13 @@ def get_bottle_plan():
                 sqlalchemy.text(
                     """
                     SELECT ARRAY[red_pct, green_pct, blue_pct, dark_pct] AS potion_type,
-                           COALESCE(SUM(qty_change), 0) AS quantity
+                           bottle_limit - COALESCE(SUM(qty_change), 0) AS can_bottle
                       FROM potion_index
                       LEFT JOIN potion_records ON potion_records.sku = potion_index.sku
                       JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
                        AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
                      GROUP BY potion_index.sku, favorability
-                     ORDER BY quantity, favorability DESC;
+                     ORDER BY can_bottle DESC, favorability DESC;
                     """
                 )
             )
@@ -120,7 +120,7 @@ def get_bottle_plan():
                 if potion.potion_type[i] != 0
             )
         )
-        num_mixable = min(max_qty, potions_left, 50 - potion.quantity)
+        num_mixable = min(max_qty, potions_left, potion.can_bottle)
         if num_mixable > 0:
             for i in range(4):
                 ml_list[i] -= num_mixable * potion.potion_type[i]

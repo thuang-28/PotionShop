@@ -5,6 +5,7 @@ create table public.potion_index (
     green_pct integer not null,
     blue_pct integer not null,
     dark_pct integer not null,
+    bottle_limit integer not null default 35,
     constraint potion_index_pkey primary key (sku)
 ) tablespace pg_default;
 
