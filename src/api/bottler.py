@@ -115,7 +115,7 @@ def get_bottle_plan():
     for potion in todays_potions:
         max_qty = (
             min(
-                ml_list[i] // potion.potion_type[i]
+                ml_list[i] // 1.5 * potion.potion_type[i]
                 for i in range(4)
                 if potion.potion_type[i] != 0
             )
