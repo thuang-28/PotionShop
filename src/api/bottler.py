@@ -81,7 +81,7 @@ def get_bottle_plan():
                       JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
                        AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
                      GROUP BY potion_index.sku, favorability
-                     ORDER BY can_bottle DESC, favorability DESC;
+                     ORDER BY favorability DESC, can_bottle DESC;
                     """
                 )
             )
@@ -113,14 +113,15 @@ def get_bottle_plan():
     ml_list = limits.ml_list
     potions_left = limits.potions_left
     for potion in todays_potions:
-        max_qty = (
+        num_mixable = min(
             min(
                 ml_list[i] // (1.5 * potion.potion_type[i])
                 for i in range(4)
-                if potion.potion_type[i] != 0
-            )
+                if potion.potion_type[i] > 0
+            ),
+            potions_left,
+            potion.can_bottle,
         )
-        num_mixable = min(max_qty, potions_left, potion.can_bottle)
         if num_mixable > 0:
             for i in range(4):
                 ml_list[i] -= num_mixable * potion.potion_type[i]

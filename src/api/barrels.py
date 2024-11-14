@@ -90,7 +90,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     SELECT
                         (SELECT 10000 * SUM(ml_units) FROM capacity_records)
                         - (SELECT COALESCE(SUM(red + green + blue + dark), 0) FROM ml_records)
-                    AS left
                 """
             )
         ).scalar_one()
