@@ -123,8 +123,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
     customers end up purchasing because they may not like what they see
     in the current catalog.
     """
-    print(customers)
-
+    print(f"[Log] Visits this tick (ID {visit_id}):", customers) 
     return "OK"
 
 
