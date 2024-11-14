@@ -1,6 +1,7 @@
 import sqlalchemy
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+import numpy as np
 
 from src import database as db
 from src.api import auth
@@ -99,24 +100,31 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             )
         ).scalar_one()
     purchase_plan = []
-    total_price = 0
-    for i in range(4):
-        max_idx = ml.index(max(ml))
-        ml[max_idx] = 0
-        barrel = max(
-            [
-                item
-                for item in wholesale_catalog
-                if item.potion_type[max_idx] == 1
-                and gold >= total_price + item.price
-                and item.ml_per_barrel <= ml_left
-            ],
-            key=lambda b: b.ml_per_barrel,
-            default=None,
-        )
-        if barrel:
-            total_price += barrel.price
-            ml_left -= barrel.ml_per_barrel
-            purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+    ranks = np.argsort(ml)[::-1]
+    sorted_catalog = sorted(
+        (
+            b
+            for b in wholesale_catalog
+            if gold >= b.price and ml_left >= b.ml_per_barrel
+        ),
+        key=lambda b: b.ml_per_barrel,
+        reverse=True,
+    )  # sort catalog by ml, filter out unpurchaseable barrels
+    for i in range(3):  # iterate through catalog 3 times
+        for r in ranks:
+            barrel = next(
+                filter(
+                    lambda b: b.potion_type[r] == 1
+                    and gold >= b.price
+                    and ml_left >= b.ml_per_barrel,
+                    sorted_catalog,
+                ),
+                None,
+            )
+            if barrel:
+                sorted_catalog.remove(barrel)
+                gold -= barrel.price
+                ml_left -= barrel.ml_per_barrel
+                purchase_plan.append({"sku": barrel.sku, "quantity": 1})
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan
