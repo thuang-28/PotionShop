@@ -1,13 +1,14 @@
-create table public.potion_index (
-    sku text not null,
-    price integer not null,
-    red_pct integer not null,
-    green_pct integer not null,
-    blue_pct integer not null,
-    dark_pct integer not null,
+create table
+  public.potion_index (
+    sku text not null default '_POTION'::text,
+    price integer not null default 35,
+    red_pct integer not null default 0,
+    green_pct integer not null default 0,
+    blue_pct integer not null default 0,
+    dark_pct integer not null default 0,
     bottle_limit integer not null default 35,
     constraint potion_index_pkey primary key (sku)
-) tablespace pg_default;
+  ) tablespace pg_default;
 
 CREATE TYPE public.day of week AS ENUM ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
 
