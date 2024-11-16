@@ -110,21 +110,31 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         key=lambda b: b.ml_per_barrel,
         reverse=True,
     )  # sort catalog by ml, filter out unpurchaseable barrels
-    for i in range(3):  # iterate through catalog 3 times
-        for r in ranks:
-            barrel = next(
-                filter(
-                    lambda b: b.potion_type[r] == 1
-                    and gold >= b.price
-                    and ml_left >= b.ml_per_barrel,
-                    sorted_catalog,
-                ),
-                None,
+    for r in ranks:
+        barrel = next(
+            (
+                b
+                for b in sorted_catalog
+                if b.potion_type[r] == 1
+                and gold >= b.price
+                and ml_left >= b.ml_per_barrel
+            ),
+            None,
+        )
+        if barrel:
+            sorted_catalog.remove(barrel)
+            qty = (
+                int(
+                    min(
+                        min(2500, ml_left) // barrel.ml_per_barrel,
+                        gold // barrel.price
+                    )
+                )
+                if barrel.ml_per_barrel < 2500
+                else 1
             )
-            if barrel:
-                sorted_catalog.remove(barrel)
-                gold -= barrel.price
-                ml_left -= barrel.ml_per_barrel
-                purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+            gold -= barrel.price * qty
+            ml_left -= barrel.ml_per_barrel * qty
+            purchase_plan.append({"sku": barrel.sku, "quantity": qty})
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan
