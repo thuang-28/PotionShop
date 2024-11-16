@@ -127,7 +127,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 int(
                     min(
                         min(2500, ml_left) // barrel.ml_per_barrel,
-                        gold // barrel.price
+                        gold // barrel.price,
+                        barrel.quantity
                     )
                 )
                 if barrel.ml_per_barrel < 2500
