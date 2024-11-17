@@ -123,7 +123,24 @@ def post_visits(visit_id: int, customers: list[Customer]):
     customers end up purchasing because they may not like what they see
     in the current catalog.
     """
-    print(f"[Log] Visits this tick (ID {visit_id}):", customers) 
+    print(f"[Log] Visits this tick (ID {visit_id}):", customers)
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO customer_visits (name, class, level)
+                     VALUES (:name, :class, :level)
+                """
+            ),
+            [
+                {
+                    "name": customer.customer_name,
+                    "class": customer.character_class,
+                    "level": customer.level,
+                }
+                for customer in customers
+            ],
+        )
     return "OK"
 
 
