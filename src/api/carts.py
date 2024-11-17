@@ -78,7 +78,7 @@ def search_orders(
                            quantity::text || ' ' || cart_items.sku AS item_sku,
                            customer_name,
                            quantity * price AS line_item_total,
-                           timestamp
+                           cart_items.timestamp
                       FROM cart_items
                       JOIN carts ON cart_items.cart_id = carts.id
                       JOIN potion_index ON cart_items.sku = potion_index.sku
