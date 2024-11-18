@@ -62,9 +62,9 @@ def get_capacity_plan():
                 )
                 SELECT (SELECT SUM(change_in_gold) FROM gold_records) AS gold,
                        capacity.p * 50 - potions.total AS num_craftable_pot,
-                       capacity.p * 10 AS potion_buy_threshold,
+                       capacity.p * 15 AS potion_buy_threshold,
                        capacity.ml * 10000 - ml.total AS num_containable_ml,
-                       capacity.ml * 1000 AS ml_buy_threshold
+                       capacity.ml * 1500 AS ml_buy_threshold
                   FROM capacity, potions, ml
                 """
             )
