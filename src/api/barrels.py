@@ -110,6 +110,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         key=lambda b: b.ml_per_barrel,
         reverse=True,
     )  # sort catalog by ml, filter out unpurchaseable barrels
+    ml_thres = int(ml_left // 4)
     for r in ranks:
         barrel = next(
             (
@@ -126,12 +127,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             qty = (
                 int(
                     min(
-                        min(2500, ml_left) // barrel.ml_per_barrel,
+                        min(ml_thres, ml_left) // barrel.ml_per_barrel,
                         gold // barrel.price,
                         barrel.quantity
                     )
                 )
-                if barrel.ml_per_barrel < 2500
+                if barrel.ml_per_barrel < ml_thres
                 else 1
             )
             gold -= barrel.price * qty
