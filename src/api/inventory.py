@@ -47,36 +47,20 @@ def get_capacity_plan():
         stats = connection.execute(
             sqlalchemy.text(
                 """
-                WITH capacity (p, ml) AS (
-                    SELECT SUM(potion_units), SUM(ml_units)
-                      FROM capacity_records
-                ),
-                potions (total) AS (
-                    SELECT COALESCE(SUM(qty_change), 0)
-                      FROM potion_records
-                ),
-                ml (total) AS (
-                    SELECT COALESCE(SUM(red + green + blue + dark), 0)
-                      FROM ml_records
-                )
                 SELECT (SELECT SUM(change_in_gold) FROM gold_records) AS gold,
-                       GREATEST(5 - capacity.p, 1) AS pt_buy_qty,
-                       (capacity.p * 50 - potions.total) < (capacity.p * 15) AS potion_buy_bool,
-                       GREATEST(5 - capacity.ml, 1) AS ml_buy_qty,
-                       (capacity.ml * 10000 - ml.total) < 10000 AS ml_buy_bool
-                  FROM capacity, potions, ml
+                       GREATEST(5 - SUM(potion_units), 1) AS pt_buy_qty,
+                       GREATEST(5 - SUM(ml_units), 1) AS ml_buy_qty
+                  FROM capacity_records
                 """
             )
         ).one()
         gold = stats.gold
         plan = {}
-        if stats.potion_buy_bool:
-            pt_qty = int(min(stats.pt_buy_qty, gold // 1000))
-            gold -= pt_qty * 1000
-            plan["potion_capacity"] = pt_qty
-        if stats.ml_buy_bool:
-            ml_qty = int(min(stats.ml_buy_qty, gold // 1000))
-            plan["ml_capacity"] = ml_qty
+        pt_qty = int(min(stats.pt_buy_qty, gold // 1000))
+        gold -= pt_qty * 1000
+        plan["potion_capacity"] = pt_qty
+        ml_qty = int(min(stats.ml_buy_qty, gold // 1000))
+        plan["ml_capacity"] = ml_qty
     print("[Log] Capacity purchase plan:", plan)
     return plan
 
