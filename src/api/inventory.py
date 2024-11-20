@@ -43,7 +43,6 @@ def get_capacity_plan():
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional
     capacity unit costs 1000 gold.
     """
-    plan = {"potion_capacity": 0, "ml_capacity": 0}
     with db.engine.begin() as connection:
         stats = connection.execute(
             sqlalchemy.text(
@@ -61,18 +60,23 @@ def get_capacity_plan():
                       FROM ml_records
                 )
                 SELECT (SELECT SUM(change_in_gold) FROM gold_records) AS gold,
+                       GREATEST(5 - capacity.p, 1) AS pt_buy_qty,
                        (capacity.p * 50 - potions.total) < (capacity.p * 15) AS potion_buy_bool,
+                       GREATEST(5 - capacity.ml, 1) AS ml_buy_qty,
                        (capacity.ml * 10000 - ml.total) < 10000 AS ml_buy_bool
                   FROM capacity, potions, ml
                 """
             )
         ).one()
         gold = stats.gold
-        if gold >= 1000 and stats.potion_buy_bool:
-            plan["potion_capacity"] = 1
-            gold -= 1000
-        if gold >= 1000 and stats.ml_buy_bool:
-            plan["ml_capacity"] = 1
+        plan = {}
+        if stats.potion_buy_bool:
+            pt_qty = int(min(stats.pt_buy_qty, gold // 1000))
+            gold -= pt_qty * 1000
+            plan["potion_capacity"] = pt_qty
+        if stats.ml_buy_bool:
+            ml_qty = int(min(stats.ml_buy_qty, gold // 1000))
+            plan["ml_capacity"] = ml_qty
     print("[Log] Capacity purchase plan:", plan)
     return plan
 
