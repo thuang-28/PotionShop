@@ -72,35 +72,29 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT ARRAY[
-                                SUM(red_pct * favorability),
-                                SUM(green_pct * favorability),
-                                SUM(blue_pct * favorability),
-                                SUM(dark_pct * favorability)
-                            ]
-                      FROM potion_index
-                      JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
-                       AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                    WITH cap (ml) AS (SELECT 10000 * SUM(ml_units) FROM capacity_records)
+                    SELECT cap.ml - COALESCE(SUM(red + green + blue + dark), 0) AS remaining,
+                           FLOOR((cap.ml * 0.85) / 3)::bigint AS thres,
+                           ARRAY[
+                               COALESCE(SUM(red), 0),
+                               COALESCE(SUM(green), 0),
+                               COALESCE(SUM(blue), 0),
+                               COALESCE(SUM(dark), 0)
+                           ] AS list
+                      FROM ml_records, cap
+                      GROUP BY cap.ml
                     """
                 )
             )
-        ).scalar_one()
-        ml_left = connection.execute(
-            sqlalchemy.text(
-                """
-                    SELECT
-                        (SELECT 10000 * SUM(ml_units) FROM capacity_records)
-                        - (SELECT COALESCE(SUM(red + green + blue + dark), 0) FROM ml_records)
-                """
-            )
-        ).scalar_one()
+        ).one()
         gold = (
             connection.execute(
                 sqlalchemy.text("SELECT SUM(change_in_gold) FROM gold_records")
             )
         ).scalar_one()
     purchase_plan = []
-    ranks = np.argsort(ml)[::-1]
+    ml_left = ml.remaining
+    ranks = np.argsort(ml.list)
     sorted_catalog = sorted(
         (
             b
@@ -110,33 +104,33 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         key=lambda b: b.ml_per_barrel,
         reverse=True,
     )  # sort catalog by ml, filter out unpurchaseable barrels
-    ml_thres = int(ml_left // 4)
     for r in ranks:
-        barrel = next(
-            (
-                b
-                for b in sorted_catalog
-                if b.potion_type[r] == 1
-                and gold >= b.price
-                and ml_left >= b.ml_per_barrel
-            ),
-            None,
-        )
-        if barrel:
-            sorted_catalog.remove(barrel)
-            qty = (
-                int(
-                    min(
-                        min(ml_thres, ml_left) // barrel.ml_per_barrel,
-                        gold // barrel.price,
-                        barrel.quantity
-                    )
-                )
-                if barrel.ml_per_barrel < ml_thres
-                else 1
+        if ml.list[r] < ml.thres:
+            barrel = next(
+                (
+                    b
+                    for b in sorted_catalog
+                    if b.potion_type[r] == 1
+                    and gold >= b.price
+                    and ml_left >= b.ml_per_barrel
+                ),
+                None,
             )
-            gold -= barrel.price * qty
-            ml_left -= barrel.ml_per_barrel * qty
-            purchase_plan.append({"sku": barrel.sku, "quantity": qty})
+            if barrel:
+                diff = ml.thres - ml.list[r]
+                sorted_catalog.remove(barrel)
+                qty = int(
+                    max(
+                        min(
+                            min(diff, ml_left) // barrel.ml_per_barrel,
+                            gold // barrel.price,
+                            barrel.quantity,
+                        ),
+                        1
+                    ),
+                )
+                gold -= barrel.price * qty
+                ml_left -= barrel.ml_per_barrel * qty
+                purchase_plan.append({"sku": barrel.sku, "quantity": qty})
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan

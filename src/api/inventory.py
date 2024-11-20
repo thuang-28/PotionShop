@@ -61,19 +61,17 @@ def get_capacity_plan():
                       FROM ml_records
                 )
                 SELECT (SELECT SUM(change_in_gold) FROM gold_records) AS gold,
-                       capacity.p * 50 - potions.total AS num_craftable_pot,
-                       capacity.p * 15 AS potion_buy_threshold,
-                       capacity.ml * 10000 - ml.total AS num_containable_ml,
-                       capacity.ml * 1500 AS ml_buy_threshold
+                       (capacity.p * 50 - potions.total) < (capacity.p * 15) AS potion_buy_bool,
+                       (capacity.ml * 10000 - ml.total) < 10000 AS ml_buy_bool
                   FROM capacity, potions, ml
                 """
             )
         ).one()
         gold = stats.gold
-        if gold >= 1000 and stats.num_craftable_pot < stats.potion_buy_threshold:
+        if gold >= 1000 and stats.potion_buy_bool:
             plan["potion_capacity"] = 1
             gold -= 1000
-        if gold >= 1000 and stats.num_containable_ml < stats.ml_buy_threshold:
+        if gold >= 1000 and stats.ml_buy_bool:
             plan["ml_capacity"] = 1
     print("[Log] Capacity purchase plan:", plan)
     return plan
