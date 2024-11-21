@@ -117,7 +117,7 @@ def get_bottle_plan():
         num_mixable = int(
             min(
                 min(
-                    ml_list[i] // (1.5 * potion.potion_type[i])
+                    ml_list[i] // potion.potion_type[i]
                     for i in range(4)
                     if potion.potion_type[i] > 0
                 ),
