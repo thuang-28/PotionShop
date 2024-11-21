@@ -57,7 +57,7 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-    offset = 0 if not search_page else int(search_page)
+    page = 0 if not search_page else int(search_page)
     sort_order_str = " ASC" if sort_order == search_sort_order.asc else " DESC"
     match sort_col:
         case search_sort_options.customer_name:
@@ -92,7 +92,7 @@ def search_orders(
                 {
                     "c_name": "%" + customer_name + "%",
                     "p_sku": "%" + potion_sku + "%",
-                    "offset": offset * 5,
+                    "offset": page * 5,
                 },
             )
             .mappings()
@@ -101,9 +101,9 @@ def search_orders(
 
     return {
         "previous": (
-            "" if not offset else str(offset + 1)
+            "" if not page else str(page - 1)
         ),
-        "next": "" if len(results) < 6 else str(offset + 1),
+        "next": "" if len(results) < 6 else str(page + 1),
         "results": results[:5],
     }
 
