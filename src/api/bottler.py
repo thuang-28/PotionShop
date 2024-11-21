@@ -80,6 +80,7 @@ def get_bottle_plan():
                       LEFT JOIN potion_records ON potion_records.sku = potion_index.sku
                       JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
                        AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                     WHERE favorability > 0
                      GROUP BY potion_index.sku, favorability
                      HAVING bottle_limit - COALESCE(SUM(qty_change), 0) > 0
                      ORDER BY favorability DESC, can_bottle DESC;
