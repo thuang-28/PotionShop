@@ -44,22 +44,30 @@ def get_capacity_plan():
     capacity unit costs 1000 gold.
     """
     with db.engine.begin() as connection:
-        stats = connection.execute(
+        gold = connection.execute(
+            sqlalchemy.text("SELECT SUM(change_in_gold) FROM gold_records")
+        ).scalar_one()
+        qty_limits = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT (SELECT SUM(change_in_gold) FROM gold_records) AS gold,
-                       GREATEST(5 - SUM(potion_units), 1) AS pt_buy_qty,
-                       GREATEST(5 - SUM(ml_units), 1) AS ml_buy_qty
-                  FROM capacity_records
+                WITH limits AS (
+                    SELECT ml_cap_unit_limit AS ml,
+                           pt_cap_unit_limit AS pt
+                      FROM magic_numbers
+                     LIMIT 1
+                )
+                SELECT GREATEST(limits.ml - SUM(ml_units), 0) AS ml_buy_qty,
+                       GREATEST(limits.pt - SUM(potion_units), 0) AS pt_buy_qty
+                FROM capacity_records, limits
+                GROUP BY limits.ml, limits.pt
                 """
             )
         ).one()
-        gold = stats.gold
         plan = {}
-        pt_qty = int(min(stats.pt_buy_qty, gold // 1000))
+        pt_qty = int(min(qty_limits.pt_buy_qty, gold // 1000))
         gold -= pt_qty * 1000
         plan["potion_capacity"] = pt_qty
-        ml_qty = int(min(stats.ml_buy_qty, gold // 1000))
+        ml_qty = int(min(qty_limits.ml_buy_qty, gold // 1000))
         plan["ml_capacity"] = ml_qty
     print("[Log] Capacity purchase plan:", plan)
     return plan

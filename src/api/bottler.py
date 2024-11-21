@@ -115,7 +115,7 @@ def get_bottle_plan():
     ml_list = limits.ml_list
     potions_left = limits.potions_left
     for potion in todays_potions:
-        num_mixable = int(
+        qty = int(
             min(
                 min(
                     ml_list[i] // potion.potion_type[i]
@@ -126,14 +126,14 @@ def get_bottle_plan():
                 potion.can_bottle,
             )
         )
-        if num_mixable > 0:
+        if qty > 0:
             for i in range(4):
-                ml_list[i] -= num_mixable * potion.potion_type[i]
-            potions_left -= num_mixable
+                ml_list[i] -= qty * potion.potion_type[i]
+            potions_left -= qty
             bottle_plan.append(
                 {
                     "potion_type": potion.potion_type,
-                    "quantity": num_mixable,
+                    "quantity": qty,
                 }
             )
     print("[Log] Bottle Plan:", bottle_plan)

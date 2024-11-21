@@ -74,7 +74,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     """
                     WITH cap (ml) AS (SELECT 10000 * SUM(ml_units) FROM capacity_records)
                     SELECT cap.ml - COALESCE(SUM(red + green + blue + dark), 0) AS remaining,
-                           FLOOR(cap.ml / 3)::bigint AS thres,
                            ARRAY[
                                COALESCE(SUM(red), 0),
                                COALESCE(SUM(green), 0),
@@ -85,6 +84,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                       GROUP BY cap.ml
                     """
                 )
+            )
+        ).one()
+        magic_nums = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT per_barrel_budget, per_barrel_ml_limit
+                  FROM magic_numbers
+                 LIMIT 1
+                """
             )
         ).one()
         gold = (
@@ -105,7 +113,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         reverse=True,
     )  # sort catalog by ml, filter out unpurchaseable barrels
     for r in ranks:
-        if ml.list[r] < ml.thres:
+        ml_diff = magic_nums.per_barrel_ml_limit - ml.list[r]
+        if ml_diff > 0:
             barrel = next(
                 (
                     b
@@ -117,13 +126,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 None,
             )
             if barrel:
-                diff = ml.thres - ml.list[r]
                 sorted_catalog.remove(barrel)
                 qty = int(
                     max(
                         min(
-                            min(diff, ml_left) // barrel.ml_per_barrel,
-                            gold // barrel.price,
+                            min(ml_diff, ml_left) // barrel.ml_per_barrel,
+                            min(magic_nums.per_barrel_budget, gold)  // barrel.price,
                             barrel.quantity,
                         ),
                         1
