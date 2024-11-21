@@ -74,7 +74,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     """
                     WITH cap (ml) AS (SELECT 10000 * SUM(ml_units) FROM capacity_records)
                     SELECT cap.ml - COALESCE(SUM(red + green + blue + dark), 0) AS remaining,
-                           FLOOR((cap.ml * 0.85) / 3)::bigint AS thres,
+                           FLOOR(cap.ml / 3)::bigint AS thres,
                            ARRAY[
                                COALESCE(SUM(red), 0),
                                COALESCE(SUM(green), 0),
