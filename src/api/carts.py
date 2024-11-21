@@ -87,12 +87,12 @@ def search_orders(
                     """
                     + sort_col_str
                     + sort_order_str
-                    + " LIMIT 5 OFFSET :offset"
+                    + " LIMIT 6 OFFSET :offset"
                 ),
                 {
                     "c_name": "%" + customer_name + "%",
                     "p_sku": "%" + potion_sku + "%",
-                    "offset": offset,
+                    "offset": offset * 5,
                 },
             )
             .mappings()
@@ -101,12 +101,10 @@ def search_orders(
 
     return {
         "previous": (
-            ""
-            if not offset or offset - len(results) < 0
-            else str(offset - len(results))
+            "" if not offset else str(offset + 1)
         ),
-        "next": "" if not results else str(offset + len(results)),
-        "results": results,
+        "next": "" if len(results) < 6 else str(offset + 1),
+        "results": results[:5],
     }
 
 
