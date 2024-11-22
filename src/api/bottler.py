@@ -80,7 +80,7 @@ def get_bottle_plan():
                                COALESCE(favorability, 1.0) AS favorability
                           FROM potion_index
                      LEFT JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
-                           AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                           AND potion_strategy.day_of_week::text = TO_CHAR(NOW(), 'fmDay')
                            AND COALESCE(favorability, 1.0) > 0
                            AND do_bottle = TRUE
                     ),
@@ -88,8 +88,7 @@ def get_bottle_plan():
                         SELECT potion, COALESCE(SUM(quantity), 0) AS recent_amt_sold
                           FROM TodayPotions
                      LEFT JOIN cart_items ON cart_items.sku = potion
-                           AND item_id IN (SELECT item_id FROM cart_items
-                                           ORDER BY item_id DESC LIMIT 50)
+                           AND timestamp >= (NOW() - INTERVAL '4 hours')
                       GROUP BY potion
                     ),
                     magic (pt_limit) AS (
