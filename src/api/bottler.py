@@ -82,7 +82,7 @@ def get_bottle_plan():
                      LEFT JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
                            AND potion_strategy.day_of_week::text = TO_CHAR(NOW(), 'fmDay')
                            AND COALESCE(favorability, 1.0) > 0
-                           AND do_bottle = TRUE
+                         WHERE do_bottle = TRUE
                     ),
                     RecentAmtSold AS (
                         SELECT potion, COALESCE(SUM(quantity), 0) AS recent_amt_sold
