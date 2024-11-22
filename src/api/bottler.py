@@ -141,7 +141,7 @@ def get_bottle_plan():
                     if potion.potion_type[i] > 0
                 ),
                 limits.potions_left,
-                potion.can_bottle,
+                potion.brewable_pt
             )
         )
         if qty > 0:
