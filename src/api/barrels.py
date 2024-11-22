@@ -91,6 +91,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 """
             )
         ).one()
+    gold = res.gold
+    ml_left = res.ml_left
     ranks = np.argsort(res.buyable_ml)[::-1]
     sorted_catalog = sorted((b for b in wholesale_catalog), key=lambda b: b.ml_per_barrel, reverse=True)  # sort catalog by ml
     purchase_plan = []
@@ -101,8 +103,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     b
                     for b in sorted_catalog
                     if b.potion_type[r] == 1
-                    and res.gold >= b.price
-                    and res.ml_left >= b.ml_per_barrel
+                    and gold >= b.price
+                    and ml_left >= b.ml_per_barrel
                 ),
                 None,
             )
@@ -111,15 +113,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 qty = int(
                     max(
                         min(
-                            min(res.buyable_ml[r], res.ml_left) // barrel.ml_per_barrel,
-                            min(res.budget, res.gold) // barrel.price,
+                            min(res.buyable_ml[r], ml_left) // barrel.ml_per_barrel,
+                            min(res.budget, gold) // barrel.price,
                             barrel.quantity,
                         ),
                         1
                     ),
                 )
-                res.gold -= barrel.price * qty
-                res.ml_left -= barrel.ml_per_barrel * qty
+                gold -= barrel.price * qty
+                ml_left -= barrel.ml_per_barrel * qty
                 purchase_plan.append({"sku": barrel.sku, "quantity": qty})
     print("[Log] Purchase Plan:", purchase_plan)
     return purchase_plan
