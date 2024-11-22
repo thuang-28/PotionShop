@@ -20,7 +20,7 @@ def get_catalog():
                             WHERE potion_strategy.day_of_week::text = TO_CHAR(NOW(), 'fmDay')
                           )
                     SELECT potion_index.sku AS sku,
-                           REPLACE(INITCAP(potion_index.sku), '_', ' ') AS name,
+                           CONCAT(REPLACE(INITCAP(potion_index.sku), '_', ' '), ' Potion') AS name,
                            COALESCE(SUM(qty_change), 0) AS quantity,
                            price,
                            ARRAY[red_pct, green_pct, blue_pct, dark_pct] AS potion_type
