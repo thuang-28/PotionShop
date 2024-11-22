@@ -74,16 +74,37 @@ def get_bottle_plan():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    SELECT ARRAY[red_pct, green_pct, blue_pct, dark_pct] AS potion_type,
-                           bottle_limit - COALESCE(SUM(qty_change), 0) AS can_bottle
-                      FROM potion_index
-                      LEFT JOIN potion_records ON potion_records.sku = potion_index.sku
-                      JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
-                       AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
-                     WHERE favorability > 0
-                     GROUP BY potion_index.sku, favorability
-                     HAVING bottle_limit - COALESCE(SUM(qty_change), 0) > 0
-                     ORDER BY favorability DESC, can_bottle DESC;
+                    WITH TodayPotions AS (
+                        SELECT potion_index.sku AS potion,
+                               ARRAY[red_pct, green_pct, blue_pct, dark_pct] AS potion_type,
+                               COALESCE(favorability, 1.0) AS favorability
+                          FROM potion_index
+                     LEFT JOIN potion_strategy ON potion_strategy.potion_sku = potion_index.sku
+                           AND potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                           AND COALESCE(favorability, 1.0) > 0
+                           AND do_bottle = TRUE
+                    ),
+                    RecentAmtSold AS (
+                        SELECT potion, COALESCE(SUM(quantity), 0) AS recent_amt_sold
+                          FROM TodayPotions
+                     LEFT JOIN cart_items ON cart_items.sku = potion
+                           AND item_id IN (SELECT item_id FROM cart_items
+                                           ORDER BY item_id DESC LIMIT 50)
+                      GROUP BY potion
+                    ),
+                    magic (pt_limit) AS (
+                        SELECT per_bottle_limit
+                        FROM magic_numbers
+                        LIMIT 1
+                    )
+                    SELECT DISTINCT potion_type, recent_amt_sold, favorability,
+                                    magic.pt_limit - COALESCE(SUM(qty_change), 0) AS brewable_pt
+                               FROM TodayPotions CROSS JOIN magic
+                               JOIN RecentAmtSold ON RecentAmtSold.potion = TodayPotions.potion
+                          LEFT JOIN potion_records ON potion_records.sku = TodayPotions.potion
+                           GROUP BY potion_type, favorability, recent_amt_sold, pt_limit
+                             HAVING magic.pt_limit > COALESCE(SUM(qty_change), 0) 
+                           ORDER BY recent_amt_sold DESC, favorability DESC, brewable_pt DESC
                     """
                 )
             )
@@ -92,44 +113,41 @@ def get_bottle_plan():
             connection.execute(
                 sqlalchemy.text(
                     """
-                    WITH p AS (
-                        SELECT
-                            (SELECT SUM(potion_units) * 50 FROM capacity_records) -
-                            (SELECT COALESCE(SUM(qty_change), 0) FROM potion_records)
-                        AS remaining
-                    )
-                    SELECT p.remaining AS potions_left,
-                           ARRAY[
+                    WITH ml (list) AS (
+                        SELECT 
+                            ARRAY[
                                COALESCE(SUM(red), 0),
                                COALESCE(SUM(green), 0),
                                COALESCE(SUM(blue), 0),
                                COALESCE(SUM(dark), 0)
-                            ] AS ml_list
-                      FROM ml_records, p
-                     GROUP BY potions_left;
+                            ]
+                        FROM ml_records
+                    )
+                    SELECT (SELECT SUM(potion_units) * 50 FROM capacity_records) -
+                                (SELECT COALESCE(SUM(qty_change), 0) FROM potion_records) AS potions_left,
+                            ml.list AS ml_list
+                      FROM ml
                     """
                 )
             )
         ).one()
     bottle_plan = []
-    ml_list = limits.ml_list
-    potions_left = limits.potions_left
     for potion in todays_potions:
         qty = int(
             min(
                 min(
-                    ml_list[i] // potion.potion_type[i]
+                    limits.ml_list[i] // potion.potion_type[i]
                     for i in range(4)
                     if potion.potion_type[i] > 0
                 ),
-                potions_left,
+                limits.potions_left,
                 potion.can_bottle,
             )
         )
         if qty > 0:
             for i in range(4):
-                ml_list[i] -= qty * potion.potion_type[i]
-            potions_left -= qty
+                limits.ml_list[i] -= qty * potion.potion_type[i]
+            limits.potions_left -= qty
             bottle_plan.append(
                 {
                     "potion_type": potion.potion_type,
