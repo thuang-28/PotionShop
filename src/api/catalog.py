@@ -17,7 +17,7 @@ def get_catalog():
                       WITH st AS (
                            SELECT potion_sku, favorability
                              FROM potion_strategy
-                            WHERE potion_strategy.day_of_week::text = TO_CHAR(now(), 'fmDay')
+                            WHERE potion_strategy.day_of_week::text = TO_CHAR(NOW(), 'fmDay')
                           )
                     SELECT potion_index.sku AS sku,
                            REPLACE(INITCAP(potion_index.sku), '_', ' ') AS name,
